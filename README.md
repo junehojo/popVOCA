@@ -23,6 +23,35 @@
 
 브랜드 컬러는 로고의 "pop"에서 온 핑크 `#FF5BB8`입니다.
 
+## 📱 스크린샷
+
+<div align="center">
+
+<table>
+  <tr>
+    <td align="center"><img src="docs/screenshots/onboarding.png" width="230" alt="온보딩"/><br/><sub><b>온보딩</b><br/>계단 오르기 학습 소개</sub></td>
+    <td align="center"><img src="docs/screenshots/home.png" width="230" alt="홈 · 계단 진도"/><br/><sub><b>홈 · 계단 진도</b><br/>걸음마다 20단어씩 해금</sub></td>
+    <td align="center"><img src="docs/screenshots/lesson-select.png" width="230" alt="레슨 선택"/><br/><sub><b>레슨 선택</b><br/>플래시카드 · 퀴즈 진입</sub></td>
+  </tr>
+  <tr>
+    <td align="center"><img src="docs/screenshots/flashcard-front.png" width="230" alt="플래시카드 앞면"/><br/><sub><b>플래시카드 (앞)</b><br/>단어 · 발음 · TTS</sub></td>
+    <td align="center"><img src="docs/screenshots/flashcard-back.png" width="230" alt="플래시카드 뒷면"/><br/><sub><b>플래시카드 (뒤)</b><br/>뜻 · 예문 · 알아요/몰라요</sub></td>
+    <td align="center"><img src="docs/screenshots/complete.png" width="230" alt="걸음 완료"/><br/><sub><b>걸음 완료</b><br/>체크 트랙 → 퀴즈로 정복</sub></td>
+  </tr>
+  <tr>
+    <td align="center"><img src="docs/screenshots/quiz.png" width="230" alt="퀴즈"/><br/><sub><b>퀴즈 점검</b><br/>6유형 (빈칸/뜻/타일…)</sub></td>
+    <td align="center"><img src="docs/screenshots/wordbook.png" width="230" alt="단어장"/><br/><sub><b>단어장</b><br/>2,640단어 · 검색 · 즐겨찾기</sub></td>
+    <td align="center"><img src="docs/screenshots/worddetail.png" width="230" alt="단어 상세"/><br/><sub><b>단어 상세</b><br/>뜻 · 예문 · 학습 상태</sub></td>
+  </tr>
+  <tr>
+    <td align="center"><img src="docs/screenshots/stats.png" width="230" alt="통계"/><br/><sub><b>통계</b><br/>주간 학습 · 걸음 진척 · 정답률</sub></td>
+    <td align="center"><img src="docs/screenshots/settings.png" width="230" alt="설정"/><br/><sub><b>설정</b><br/>목표 · 알림 · 다크 모드 · 동기화</sub></td>
+    <td align="center"><sub>웹 미리보기 화면 캡처<br/>(안드로이드 빌드 시<br/>오버레이 · 잠금화면 기능 추가)</sub></td>
+  </tr>
+</table>
+
+</div>
+
 ## ✨ 주요 기능
 
 - **계단형 진도** — 20단어 = 1걸음, 총 132걸음. 신규 사용자는 1걸음만 열린 상태로 시작.

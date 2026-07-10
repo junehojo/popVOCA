@@ -1,0 +1,31 @@
+# === OS / editor ===
+.DS_Store
+*.log
+
+# === local tooling (Claude Code preview config, session-specific) ===
+.claude/
+
+# === node / expo (also covered by vocapop-app/.gitignore, kept here as a safety net) ===
+node_modules/
+.expo/
+dist/
+web-build/
+
+# === android build artifacts ===
+android/build/
+android/app/build/
+android/.gradle/
+android/.cxx/
+android/local.properties
+*.keystore
+!android/app/debug.keystore
+
+# === ios ===
+ios/build/
+ios/Pods/
+
+# === data backups / old snapshots (keep local, don't publish) ===
+assets/*.bak
+assets/*.bak[0-9]*
+_bak_*/
+.srs_bak/

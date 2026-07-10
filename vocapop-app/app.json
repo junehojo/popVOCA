@@ -1,0 +1,32 @@
+{
+  "expo": {
+    "name": "popVOCA",
+    "slug": "vocapop",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "light",
+    "scheme": "vocapop",
+    "icon": "./assets/icon.png",
+    "splash": {
+      "backgroundColor": "#FF5BB8",
+      "resizeMode": "contain"
+    },
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.vocapop.app"
+    },
+    "android": {
+      "package": "com.vocapop.app",
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#FF5BB8"
+      }
+    },
+    "assetBundlePatterns": [
+      "**/*"
+    ],
+    "plugins": [
+      "expo-font"
+    ]
+  }
+}

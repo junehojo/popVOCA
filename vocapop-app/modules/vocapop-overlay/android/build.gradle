@@ -1,0 +1,16 @@
+apply plugin: 'com.android.library'
+
+group = 'com.vocapop.overlay'
+version = '0.1.0'
+
+// SDK 51 호환: expo-module-gradle-plugin(최신 문법) 대신 ExpoModulesCorePlugin.gradle 헬퍼 사용
+def expoModulesCorePlugin = new File(project(":expo-modules-core").projectDir.absolutePath, "ExpoModulesCorePlugin.gradle")
+apply from: expoModulesCorePlugin
+applyKotlinExpoModulesCorePlugin()
+useCoreDependencies()
+useDefaultAndroidSdkVersions()
+useExpoPublishing()
+
+android {
+  namespace 'com.vocapop.overlay'
+}

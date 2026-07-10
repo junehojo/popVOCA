@@ -148,5 +148,5 @@ cd android && ./gradlew :app:assembleRelease
 ---
 
 <div align="center">
-<sub>개인 프로젝트 · Designed and Developed by <a href="https://github.com/junehojo">junehojo</a></sub>
+<sub>Designed and Developed by <a href="https://github.com/junehojo">junehojo</a></sub>
 </div>

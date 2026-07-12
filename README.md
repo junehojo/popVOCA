@@ -1,6 +1,6 @@
 <div align="center">
 
-# 🌸 popVOCA
+# 🌸 popVOCA, 팝보카
 
 **토플 단어 학습 앱 — 계단을 오르듯 하루 20단어씩**
 

@@ -29,8 +29,8 @@ export default function Onboarding({ onDone }) {
 
   return (
     <View style={{ flex: 1, backgroundColor: VP.bg }}>
-      {/* 건너뛰기 */}
-      <View style={{ flexDirection: 'row', justifyContent: 'flex-end', paddingHorizontal: 16, paddingTop: 12 }}>
+      {/* 건너뛰기 — ★pH 16→20: 화면 기본 패딩과 통일 */}
+      <View style={{ flexDirection: 'row', justifyContent: 'flex-end', paddingHorizontal: 20, paddingTop: 12 }}>
         <Pressable onPress={onDone} hitSlop={8} style={{ paddingHorizontal: 10, paddingVertical: 8 }}>
           <Text style={{ fontSize: 14, fontFamily: ff(600), color: VP.textSub }}>건너뛰기</Text>
         </Pressable>
@@ -44,19 +44,20 @@ export default function Onboarding({ onDone }) {
         <View style={{ width: 104, height: 104, borderRadius: 28, backgroundColor: VP.accentSoft, alignItems: 'center', justifyContent: 'center' }}>
           <Icon name={s.icon} size={48} color={VP.accent} />
         </View>
-        <Text style={{ fontSize: 25, fontFamily: ff(800), color: VP.text, letterSpacing: ls(-0.03, 25), lineHeight: 31, textAlign: 'center' }}>{s.title}</Text>
-        <Text style={{ fontSize: 15, color: VP.textSub, lineHeight: 24, textAlign: 'center', maxWidth: 300 }}>{s.desc}</Text>
+        {/* ★25→22(고아 크기 제거·화면 타이틀 단계와 통일), lineHeight 31→30. balanced: 한글이 음절 중간에서 꺾이던 문제 완화(안드) */}
+        <Text textBreakStrategy="balanced" style={{ fontSize: 22, fontFamily: ff(800), color: VP.text, letterSpacing: ls(-0.025, 22), lineHeight: 30, textAlign: 'center' }}>{s.title}</Text>
+        <Text textBreakStrategy="balanced" style={{ fontSize: 15, color: VP.textSub, letterSpacing: ls(-0.01, 15), lineHeight: 24, textAlign: 'center', maxWidth: 300 }}>{s.desc}</Text>
       </Animated.View>
 
       {/* 점 인디케이터 */}
-      <View style={{ flexDirection: 'row', justifyContent: 'center', gap: 7, paddingBottom: 22 }}>
+      <View style={{ flexDirection: 'row', justifyContent: 'center', gap: 8, paddingBottom: 24 }}>
         {SLIDES.map((_, i) => (
           <View key={i} style={{ width: i === idx ? 22 : 7, height: 7, borderRadius: 999, backgroundColor: i === idx ? VP.accent : VP.border }} />
         ))}
       </View>
 
-      {/* CTA */}
-      <View style={{ paddingHorizontal: 24, paddingBottom: 24 }}>
+      {/* CTA — ★pH 24→20: ProtoFooter(20)와 통일 */}
+      <View style={{ paddingHorizontal: 20, paddingBottom: 24 }}>
         <VPButton variant="accent" label={last ? '시작하기' : '다음'} iconRight="arrow-right" onPress={() => (last ? onDone() : setIdx(idx + 1))} />
       </View>
     </View>

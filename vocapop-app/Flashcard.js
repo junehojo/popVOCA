@@ -51,7 +51,7 @@ export function FlashcardScreen({ state, dispatch, onOverlay }) {
   const canPrev = !isR2 && state.cardIdx > 0 && (state.cardHistory || []).length > 0;
   const prevBtn = canPrev ? (
     <Pressable onPress={() => { hTap(); dispatch({ type: 'CARD_PREV' }); }} hitSlop={6} style={{
-      width: 56, height: 56, borderRadius: 14, backgroundColor: VP.surface2,
+      width: 56, height: 56, borderRadius: 16, backgroundColor: VP.surface2,
       borderWidth: 1.5, borderColor: VP.border, alignItems: 'center', justifyContent: 'center',
     }}>
       <Icon name="arrow-left" size={20} color={VP.textSub} />
@@ -81,7 +81,8 @@ export function FlashcardScreen({ state, dispatch, onOverlay }) {
               <Text style={{ fontSize: 11, fontFamily: ff(700), color: isR2 ? '#fff' : VP.textSub, letterSpacing: ls(0.02, 11) }}>{isR2 ? '2R · 다시' : '1R'}</Text>
             </View>
             <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-              {review && <View style={{ paddingHorizontal: 7, paddingVertical: 2, borderRadius: 999, backgroundColor: VP.accentSoft, marginRight: 6 }}><Text style={{ fontSize: 10, fontFamily: ff(800), color: VP.accent }}>복습</Text></View>}
+              {/* ★한글 배지 10px+800은 획이 뭉개짐 → 11/700 */}
+              {review && <View style={{ paddingHorizontal: 7, paddingVertical: 2, borderRadius: 999, backgroundColor: VP.accentSoft, marginRight: 6 }}><Text style={{ fontSize: 11, fontFamily: ff(700), color: VP.accent }}>복습</Text></View>}
               <Text style={{ fontSize: 11, fontFamily: ff(600), color: VP.textMute }}>#{String(word.id).padStart(3, '0')}</Text>
             </View>
           </View>
@@ -107,7 +108,7 @@ export function FlashcardScreen({ state, dispatch, onOverlay }) {
               <Text style={{ fontSize: 11, fontFamily: ff(700), color: VP.textSub, letterSpacing: ls(0.02, 11) }}>뒷면</Text>
             </View>
             <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-              {review && <View style={{ paddingHorizontal: 7, paddingVertical: 2, borderRadius: 999, backgroundColor: VP.accentSoft, marginRight: 6 }}><Text style={{ fontSize: 10, fontFamily: ff(800), color: VP.accent }}>복습</Text></View>}
+              {review && <View style={{ paddingHorizontal: 7, paddingVertical: 2, borderRadius: 999, backgroundColor: VP.accentSoft, marginRight: 6 }}><Text style={{ fontSize: 11, fontFamily: ff(700), color: VP.accent }}>복습</Text></View>}
               <Text style={{ fontSize: 11, fontFamily: ff(600), color: VP.textMute }}>#{String(word.id).padStart(3, '0')}</Text>
             </View>
           </View>
@@ -124,14 +125,15 @@ export function FlashcardScreen({ state, dispatch, onOverlay }) {
               {meaningList(word).map((m, i) => (
                 <View key={i} style={{ flexDirection: 'row', alignItems: 'center' }}>
                   <View style={{ width: 18, height: 18, borderRadius: 9, backgroundColor: VP.accent, alignItems: 'center', justifyContent: 'center', marginRight: 8 }}>
-                    <Text style={{ fontSize: 10, fontFamily: ff(700), color: '#fff' }}>{i + 1}</Text>
+                    <Text style={{ fontSize: 11, fontFamily: ff(700), color: '#fff' }}>{i + 1}</Text>
                   </View>
                   <Text style={{ flex: 1, fontSize: 18, fontFamily: ff(600), color: VP.text, letterSpacing: ls(-0.02, 18) }}>{m}</Text>
                 </View>
               ))}
             </View>
+            {/* ★marginTop 'auto'→24: 예문이 카드 바닥에 붙어 뜻과 ~550px 찢어져 있었음 — 뜻에 이어 한 흐름으로 */}
             {!!exampleOf(word) && (
-              <View style={{ marginTop: 'auto', paddingHorizontal: 14, paddingVertical: 12, backgroundColor: VP.bg, borderRadius: 12, borderWidth: 1, borderColor: VP.divider }}>
+              <View style={{ marginTop: 24, paddingHorizontal: 14, paddingVertical: 12, backgroundColor: VP.bg, borderRadius: 12, borderWidth: 1, borderColor: VP.divider }}>
                 <Text style={{ fontSize: 14, color: VP.textSub, fontStyle: 'italic', lineHeight: 21 }}>"{exampleOf(word)}"</Text>
                 {word.exampleKor ? (
                   <View style={{ marginTop: 8, paddingTop: 8, borderTopWidth: 1, borderTopColor: VP.divider }}>
@@ -176,22 +178,24 @@ export function CardDoneScreen({ state, dispatch }) {
   return (
     <View style={{ flex: 1, backgroundColor: VP.bg }}>
       <ProtoTopBar onBack={() => dispatch({ type: 'GO', screen: 'home' })} icon={<Icon name="cards" size={16} color={VP.text} />} label="플래시카드" right="체크 완료" />
-      <View style={{ flex: 1, paddingHorizontal: 24, alignItems: 'center', justifyContent: 'center' }}>
+      {/* ★pH 24→20: 화면 기본 패딩과 통일. 서브타이틀 둘째 문장 삭제 — 버튼이 이미 그 선택지를 말하고 있어 같은 메시지가 3번 반복됐음 */}
+      <View style={{ flex: 1, paddingHorizontal: 20, alignItems: 'center', justifyContent: 'center' }}>
         <View style={{ width: 76, height: 76, borderRadius: 38, backgroundColor: VP.okSoft, alignItems: 'center', justifyContent: 'center' }}>
           <Icon name="check" size={38} color={VP.ok} strokeWidth={2.5} />
         </View>
         <Text style={{ fontSize: 24, fontFamily: ff(800), color: VP.text, letterSpacing: ls(-0.025, 24), marginTop: 16 }}>{stage}걸음 체크 완료!</Text>
-        <Text style={{ fontSize: 14, color: VP.textSub, marginTop: 6, textAlign: 'center', lineHeight: 21 }}>새 단어 20개{reviewN > 0 ? ` + 복습 ${reviewN}개` : ''}를 다 훑었어요.{'\n'}퀴즈로 점검하거나, 다음 걸음을 이어서 체크해도 돼요.</Text>
-        <View style={{ width: '100%', maxWidth: 300, marginTop: 16, padding: 16, backgroundColor: VP.surface, borderRadius: 14, gap: 10 }}>
+        <Text style={{ fontSize: 14, color: VP.textSub, marginTop: 6, textAlign: 'center', lineHeight: 21 }}>새 단어 20개{reviewN > 0 ? ` + 복습 ${reviewN}개` : ''}를 다 훑었어요</Text>
+        <View style={{ width: '100%', maxWidth: 300, marginTop: 16, padding: 16, backgroundColor: VP.surface, borderRadius: 16, gap: 10 }}>
           <TrackRow done label="체크" sub="카드 학습 완료" />
-          <TrackRow label="퀴즈 점검" sub="선택 — 안 해도 진행 OK" />
+          <TrackRow label="퀴즈 점검" sub="선택 사항" />
         </View>
       </View>
       <ProtoFooter>
         <VPButton variant="accent" icon="pencil" label="퀴즈로 점검하기" onPress={() => dispatch({ type: 'START_QUIZ', stage })} />
         <View style={{ flexDirection: 'row', gap: 10 }}>
           <VPButton variant="default" full={false} style={{ flex: 1 }} label="다음 걸음 체크" onPress={() => dispatch({ type: 'START_CARD', stage: state.checkedCount + 1 })} />
-          <VPButton variant="default" full={false} style={{ flex: 1 }} label="홈으로" onPress={() => dispatch({ type: 'GO', screen: 'home' })} />
+          {/* ★ghost로 강등 — 성격이 정반대인 두 액션(새 학습 시작 vs 세션 종료)이 같은 무게였음 → accent/default/ghost 3단 위계 */}
+          <VPButton variant="ghost" full={false} style={{ flex: 1 }} label="홈으로" onPress={() => dispatch({ type: 'GO', screen: 'home' })} />
         </View>
       </ProtoFooter>
     </View>
@@ -206,10 +210,10 @@ function TrackRow({ done, label, sub }) {
         <Icon name={done ? 'check-bold' : 'pencil'} size={done ? 14 : 13} color={done ? '#fff' : VP.textMute} />
       </View>
       <View style={{ flex: 1 }}>
-        <Text style={{ fontSize: 14, fontFamily: ff(800), color: done ? VP.text : VP.textSub, letterSpacing: ls(-0.02, 14) }}>{label}</Text>
+        <Text style={{ fontSize: 14, fontFamily: ff(700), color: done ? VP.text : VP.textSub, letterSpacing: ls(-0.02, 14) }}>{label}</Text>
         <Text style={{ fontSize: 12, color: VP.textMute, marginTop: 1 }}>{sub}</Text>
       </View>
-      {done && <View style={{ paddingHorizontal: 9, paddingVertical: 3, borderRadius: 999, backgroundColor: VP.okSoft }}><Text style={{ fontSize: 11, fontFamily: ff(800), color: VP.okDeep }}>완료</Text></View>}
+      {done && <View style={{ paddingHorizontal: 8, paddingVertical: 3, borderRadius: 999, backgroundColor: VP.okSoft }}><Text style={{ fontSize: 11, fontFamily: ff(700), color: VP.okDeep }}>완료</Text></View>}
     </View>
   );
 }
@@ -223,12 +227,12 @@ export function PreviewScreen({ state, dispatch }) {
       <ProtoTopBar onBack={() => dispatch({ type: 'PAUSE' })} icon={<Icon name="book-open" size={16} color={VP.text} />} label={`미리보기 · ${state.activeStage}걸음째`} />
       <View style={{ paddingHorizontal: 20, paddingBottom: 8 }}>
         <Text style={{ fontSize: 22, fontFamily: ff(800), color: VP.text, letterSpacing: ls(-0.025, 22) }}>이번에 외울 {words.length}단어</Text>
-        <Text style={{ fontSize: 13, color: VP.textSub, marginTop: 4 }}>가볍게 훑어보기 — 다 외우지 않아도 OK{reviewN > 0 ? ` · 복습 ${reviewN}개가 카드에 섞여 나와요` : ''}</Text>
+        <Text style={{ fontSize: 13, color: VP.textSub, marginTop: 4, lineHeight: 19 }}>가볍게 훑어보기 — 다 외우지 않아도 OK{reviewN > 0 ? ` · 복습 ${reviewN}개가 카드에 섞여 나와요` : ''}</Text>
       </View>
       <ScrollView style={{ flex: 1 }} contentContainerStyle={{ paddingHorizontal: 20, paddingTop: 8, paddingBottom: 16 }}>
         {words.map(w => (
           <View key={w.id} style={{ flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 12, paddingHorizontal: 14, marginBottom: 8, backgroundColor: VP.surface, borderRadius: 12 }}>
-            <Text numberOfLines={1} style={{ fontSize: 10.5, color: VP.textMute, fontFamily: ff(600), width: 40 }}>#{String(w.id).padStart(3, '0')}</Text>
+            <Text numberOfLines={1} style={{ fontSize: 11, color: VP.textMute, fontFamily: ff(600), width: 40 }}>#{String(w.id).padStart(3, '0')}</Text>
             <View style={{ flex: 1, minWidth: 0 }}>
               <View style={{ flexDirection: 'row', alignItems: 'baseline', gap: 6, flexWrap: 'wrap' }}>
                 <Text style={{ fontSize: 17, fontFamily: ff(700), color: VP.text, letterSpacing: ls(-0.01, 17) }}>{w.word}</Text>
@@ -253,7 +257,7 @@ export function CardR1EndScreen({ state, dispatch }) {
   return (
     <View style={{ flex: 1, backgroundColor: VP.bg }}>
       <ProtoTopBar onBack={() => dispatch({ type: 'PAUSE' })} icon={<Icon name="cards" size={16} color={VP.text} />} label="플래시카드" right="1R 완료" />
-      <View style={{ flex: 1, paddingHorizontal: 24, alignItems: 'center', justifyContent: 'center', gap: 18 }}>
+      <View style={{ flex: 1, paddingHorizontal: 20, alignItems: 'center', justifyContent: 'center', gap: 18 }}>
         <View style={{ width: 80, height: 80, borderRadius: 40, backgroundColor: VP.accentSoft, alignItems: 'center', justifyContent: 'center' }}>
           <Icon name="repeat" size={36} color={VP.accent} />
         </View>
@@ -267,7 +271,8 @@ export function CardR1EndScreen({ state, dispatch }) {
         </View>
       </View>
       <ProtoFooter>
-        <VPButton variant="accent" label="이제 다 외워볼까요" onPress={() => dispatch({ type: 'START_CARD_R2' })} />
+        {/* ★질문형 CTA('이제 다 외워볼까요')는 누르면 뭐가 되는지 모호 → 동작을 그대로 말하는 라벨 */}
+        <VPButton variant="accent" label="2라운드 시작" iconRight="arrow-right" onPress={() => dispatch({ type: 'START_CARD_R2' })} />
       </ProtoFooter>
     </View>
   );

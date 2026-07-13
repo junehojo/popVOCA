@@ -37,6 +37,8 @@ export function Icon({ name, size = 18, color = '#1F2430', strokeWidth = 1.75 })
     case 'flame': case 'flame-circle': return <Svg {...v}><Path {...k} d="M12 2s5 5.5 5 10a5 5 0 0 1-10 0c0-1.6.7-3 1.6-4-.2 1.2.2 2.3 1 2.6C9 7.5 12 5 12 2z" /></Svg>;
     case 'star': return <Svg {...v}><Polygon {...k} fill={color} points="12 2 15.1 8.6 22 9.3 16.8 14 18.3 21 12 17.5 5.7 21 7.2 14 2 9.3 8.9 8.6 12 2" /></Svg>;
     case 'star-line': return <Svg {...v}><Polygon {...k} points="12 2 15.1 8.6 22 9.3 16.8 14 18.3 21 12 17.5 5.7 21 7.2 14 2 9.3 8.9 8.6 12 2" /></Svg>;
+    /* ★moon 추가: 다크모드 행 아이콘이 star(즐겨찾기와 의미 충돌) → 관례대로 달 아이콘 */
+    case 'moon': return <Svg {...v}><Path {...k} d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z" /></Svg>;
     case 'sparkle': return <Svg {...v}><Path {...k} d="M12 3v4M12 17v4M3 12h4M17 12h4M5.6 5.6l2.8 2.8M15.6 15.6l2.8 2.8M5.6 18.4l2.8-2.8M15.6 8.4l2.8-2.8" /></Svg>;
     case 'party': return <Svg {...v}><Path {...k} d="M3 21l5-13 8 8-13 5z" /><Path {...k} d="M14 4l1-1M19 5l1.5-1.5M17 9l3 .5M16 13.5l3 2" /></Svg>;
     case 'lightbulb': return <Svg {...v}><Path {...k} d="M9 18h6" /><Path {...k} d="M10 21h4" /><Path {...k} d="M8 14a5 5 0 1 1 8 0c-.7.8-1 1.6-1 2.5V18H9v-1.5c0-.9-.3-1.7-1-2.5z" /></Svg>;

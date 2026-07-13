@@ -19,8 +19,10 @@ export default function AuthSheet({ visible, onClose }) {
   const [err, setErr] = useState('');
   const [info, setInfo] = useState('');
 
+  /* ★보더 추가: 필드가 배경색만으로는 존재감이 약해 버튼과의 시각 위계가 뒤집혀 보였음 */
   const input = {
-    backgroundColor: VP.surface2, borderRadius: 12, paddingHorizontal: 14, paddingVertical: 12,
+    backgroundColor: VP.surface2, borderRadius: 12, borderWidth: 1, borderColor: VP.divider,
+    paddingHorizontal: 14, paddingVertical: 12,
     fontSize: 15, color: VP.text, fontFamily: ff(500), marginTop: 12,
   };
 
@@ -77,7 +79,7 @@ export default function AuthSheet({ visible, onClose }) {
     <Modal visible={visible} transparent animationType="fade" statusBarTranslucent onRequestClose={onClose}>
       <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={{ flex: 1 }}>
         <Pressable style={{ flex: 1, backgroundColor: 'rgba(8,10,16,0.5)', justifyContent: 'center', paddingHorizontal: 28 }} onPress={onClose}>
-          <Pressable onPress={() => {}} style={{ backgroundColor: VP.surface, borderRadius: 22, padding: 22, borderWidth: 1, borderColor: VP.divider }}>
+          <Pressable onPress={() => {}} style={{ backgroundColor: VP.surface, borderRadius: 20, padding: 20, borderWidth: 1, borderColor: VP.divider }}>
             <View style={{ alignItems: 'center' }}>
               <View style={{ width: 56, height: 56, borderRadius: 16, backgroundColor: VP.accentSoft, alignItems: 'center', justifyContent: 'center' }}>
                 <Icon name="mountain" size={28} color={VP.accent} />
@@ -104,8 +106,8 @@ export default function AuthSheet({ visible, onClose }) {
             <TextInput value={pw} onChangeText={setPw} placeholder="비밀번호" placeholderTextColor={VP.textMute}
               secureTextEntry style={input} />
 
-            {err ? <Text style={{ color: VP.bad, fontSize: 12.5, marginTop: 10, fontFamily: ff(600), lineHeight: 18 }}>{err}</Text> : null}
-            {info ? <Text style={{ color: VP.accentDeep, fontSize: 12.5, marginTop: 10, fontFamily: ff(600), lineHeight: 18 }}>{info}</Text> : null}
+            {err ? <Text style={{ color: VP.bad, fontSize: 13, marginTop: 10, fontFamily: ff(600), lineHeight: 18 }}>{err}</Text> : null}
+            {info ? <Text style={{ color: VP.accentDeep, fontSize: 13, marginTop: 10, fontFamily: ff(600), lineHeight: 18 }}>{info}</Text> : null}
 
             <View style={{ marginTop: 16 }}>
               <VPButton variant="accent" label={busy ? '잠시만…' : (mode === 'signup' ? '회원가입' : '로그인')} onPress={busy ? undefined : submit} disabled={busy} />

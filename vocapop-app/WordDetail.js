@@ -32,13 +32,13 @@ function PulseSpeak({ text }) {
     if (tmr.current) clearTimeout(tmr.current);
     try { Speech.stop(); } catch (e) {}
     tmr.current = setTimeout(() => {
-      try { Speech.speak(String(text), { language: 'en-US', rate: 0.92, onStart: () => setOn(true), onDone: () => setOn(false), onStopped: () => setOn(false), onError: () => setOn(false) }); }
+      try { Speech.speak(String(text), { language: 'en-US', rate: 0.95, onStart: () => setOn(true), onDone: () => setOn(false), onStopped: () => setOn(false), onError: () => setOn(false) }); }   // ★rate 0.92→0.95: 공용 speak()와 통일
       catch (e) { setOn(false); }
     }, 90);
   };
   return (
     <Pressable onPress={press} hitSlop={6}>
-      <Animated.View style={{ width: 46, height: 46, borderRadius: 14, backgroundColor: VP.accentSoft, alignItems: 'center', justifyContent: 'center', transform: [{ scale: sc }] }}>
+      <Animated.View style={{ width: 46, height: 46, borderRadius: 12, backgroundColor: VP.accentSoft, alignItems: 'center', justifyContent: 'center', transform: [{ scale: sc }] }}>
         <Icon name="speaker" size={22} color={VP.accent} />
       </Animated.View>
     </Pressable>
@@ -75,10 +75,10 @@ export default function WordDetail({ word, isFav, ivl = 0, onToggleFav, onClose 
         </Pressable>
 
         <Animated.View style={{
-          backgroundColor: VP.bg, borderTopLeftRadius: 26, borderTopRightRadius: 26,
+          backgroundColor: VP.bg, borderTopLeftRadius: VP.rSheet, borderTopRightRadius: VP.rSheet,
           maxHeight: '88%', transform: [{ translateY: ty }],
         }}>
-          <ScrollView contentContainerStyle={{ paddingHorizontal: 22, paddingTop: 10, paddingBottom: 28 }} bounces={false}>
+          <ScrollView contentContainerStyle={{ paddingHorizontal: 20, paddingTop: 10, paddingBottom: 28 }} bounces={false}>
             {/* grabber */}
             <View style={{ alignItems: 'center', paddingTop: 4, paddingBottom: 14 }}>
               <View style={{ width: 40, height: 5, borderRadius: 999, backgroundColor: VP.border }} />
@@ -92,7 +92,8 @@ export default function WordDetail({ word, isFav, ivl = 0, onToggleFav, onClose 
 
             {/* 단어 + 발음 */}
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, marginTop: 4 }}>
-              <Text style={{ flex: 1, fontSize: 40, fontFamily: ff(800), color: VP.text, letterSpacing: ls(-0.03, 40) }}>{word.word}</Text>
+              {/* ★40→44: 히어로 단어 크기를 플래시카드·퀴즈(44)와 통일 */}
+              <Text style={{ flex: 1, fontSize: 44, fontFamily: ff(800), color: VP.text, letterSpacing: ls(-0.03, 44) }}>{word.word}</Text>
               <PulseSpeak text={word.word} />
             </View>
             {word.pronunciation ? <Text style={{ fontSize: 14, color: VP.textMute, marginTop: 2 }}>{word.pronunciation}</Text> : null}
@@ -125,7 +126,7 @@ export default function WordDetail({ word, isFav, ivl = 0, onToggleFav, onClose 
             {/* 예문 */}
             {ex ? (
               <View style={{ marginTop: 18 }}>
-                <Text style={{ fontSize: 11, fontFamily: ff(800), color: VP.textSub, letterSpacing: ls(0.04, 11), marginBottom: 8 }}>예문</Text>
+                <Text style={{ fontSize: 13, fontFamily: ff(700), color: VP.textSub, letterSpacing: ls(-0.01, 13), marginBottom: 8 }}>예문</Text>
                 <View style={{ padding: 16, backgroundColor: VP.surface, borderRadius: 14, borderWidth: 1, borderColor: VP.divider }}>
                   <View style={{ flexDirection: 'row', alignItems: 'flex-start', gap: 10 }}>
                     <Text style={{ flex: 1, fontSize: 15, color: VP.text, lineHeight: 23, fontStyle: 'italic' }}>"{ex}"</Text>
@@ -133,7 +134,7 @@ export default function WordDetail({ word, isFav, ivl = 0, onToggleFav, onClose 
                   </View>
                   {word.exampleKor ? (
                     <View style={{ marginTop: 10, paddingTop: 10, borderTopWidth: 1, borderTopColor: VP.divider }}>
-                      <UnderlinedKor text={word.exampleKor} style={{ fontSize: 13.5, color: VP.textSub, lineHeight: 20 }} />
+                      <UnderlinedKor text={word.exampleKor} style={{ fontSize: 13, color: VP.textSub, lineHeight: 20 }} />
                     </View>
                   ) : null}
                 </View>

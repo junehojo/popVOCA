@@ -25,7 +25,7 @@ function BoxDist({ boxes }) {
       <View style={{ flexDirection: 'row', alignItems: 'flex-end', justifyContent: 'space-between', height: 100, paddingTop: 6 }}>
         {counts.map((n, i) => (
           <View key={i} style={{ flex: 1, alignItems: 'center' }}>
-            <Text style={{ fontSize: 10, fontFamily: ff(700), color: n ? (i === 6 ? VP.okDeep : VP.accent) : VP.textMute, height: 14 }}>{n > 0 ? n : ''}</Text>
+            <Text style={{ fontSize: 11, fontFamily: ff(700), color: n ? (i === 6 ? VP.okDeep : VP.accent) : VP.textMute, height: 15 }}>{n > 0 ? n : ''}</Text>
             <View style={{ width: 22, height: n ? Math.max(8, Math.round((n / max) * 72)) : 4, borderRadius: 7, marginTop: 4, backgroundColor: n ? (i === 6 ? VP.ok : VP.accent) : VP.surface2 }} />
           </View>
         ))}
@@ -38,11 +38,12 @@ function BoxDist({ boxes }) {
   );
 }
 
-function StatCard({ big, label, icon, accent }) {
+/* ★22→20(Result 스탯 숫자와 통일)·radius 14→16(rLg 스냅)·아이콘 색 통일(가운데만 핑크라 이유 없는 강조였음) */
+function StatCard({ big, label, icon }) {
   return (
-    <View style={{ flex: 1, backgroundColor: VP.surface, borderRadius: 14, paddingVertical: 14, paddingHorizontal: 8, alignItems: 'center', borderWidth: 1, borderColor: VP.divider }}>
-      <Icon name={icon} size={18} color={accent ? VP.accent : VP.textSub} />
-      <Text style={{ fontSize: 22, fontFamily: ff(800), color: VP.text, letterSpacing: ls(-0.03, 22), marginTop: 6 }}>{big}</Text>
+    <View style={{ flex: 1, backgroundColor: VP.surface, borderRadius: 16, paddingVertical: 14, paddingHorizontal: 8, alignItems: 'center', borderWidth: 1, borderColor: VP.divider }}>
+      <Icon name={icon} size={18} color={VP.textSub} />
+      <Text style={{ fontSize: 20, fontFamily: ff(800), color: VP.text, letterSpacing: ls(-0.025, 20), marginTop: 6 }}>{big}</Text>
       <Text style={{ fontSize: 11, color: VP.textSub, fontFamily: ff(600), marginTop: 2 }}>{label}</Text>
     </View>
   );
@@ -52,7 +53,8 @@ function SectionCard({ title, right, children }) {
   return (
     <View style={{ backgroundColor: VP.surface, borderRadius: 16, paddingVertical: 14, paddingHorizontal: 16, marginBottom: 14, borderWidth: 1, borderColor: VP.divider }}>
       <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
-        <Text style={{ fontSize: 14, fontFamily: ff(800), color: VP.text, letterSpacing: ls(-0.02, 14) }}>{title}</Text>
+        {/* ★카드 타이틀 15/700로 통일 (800 남용 정리 — 강조는 굵기 한 단계로 충분) */}
+        <Text style={{ fontSize: 15, fontFamily: ff(700), color: VP.text, letterSpacing: ls(-0.02, 15) }}>{title}</Text>
         {right ? <Text style={{ fontSize: 12, color: VP.accent, fontFamily: ff(700) }}>{right}</Text> : null}
       </View>
       {children}
@@ -62,13 +64,13 @@ function SectionCard({ title, right, children }) {
 
 function MiniLink({ icon, label, value, onPress }) {
   return (
-    <Pressable onPress={onPress} style={{ flex: 1, backgroundColor: VP.surface, borderRadius: 14, paddingVertical: 14, paddingHorizontal: 16, borderWidth: 1, borderColor: VP.divider, flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+    <Pressable onPress={onPress} style={{ flex: 1, backgroundColor: VP.surface, borderRadius: 16, paddingVertical: 14, paddingHorizontal: 16, borderWidth: 1, borderColor: VP.divider, flexDirection: 'row', alignItems: 'center', gap: 10 }}>
       <View style={{ width: 34, height: 34, borderRadius: 10, backgroundColor: VP.accentSoft, alignItems: 'center', justifyContent: 'center' }}>
         <Icon name={icon} size={17} color={VP.accent} />
       </View>
       <View style={{ flex: 1, minWidth: 0 }}>
         <Text style={{ fontSize: 12, color: VP.textSub, fontFamily: ff(600) }}>{label}</Text>
-        <Text style={{ fontSize: 16, fontFamily: ff(800), color: VP.text, letterSpacing: ls(-0.02, 16) }}>{value}</Text>
+        <Text style={{ fontSize: 17, fontFamily: ff(700), color: VP.text, letterSpacing: ls(-0.02, 17) }}>{value}</Text>
       </View>
       <Icon name="chevron-right" size={16} color={VP.textMute} />
     </Pressable>
@@ -130,18 +132,19 @@ export default function Stats({ state, dispatch }) {
           {/* 요약 3카드 */}
           <View style={{ flexDirection: 'row', gap: 8, marginBottom: 14 }}>
             <StatCard big={learned} label="외운 단어" icon="book-open" />
-            <StatCard big={`${state.streak}일`} label="연속 학습" icon="flame" accent />
+            <StatCard big={`${state.streak}일`} label="연속 학습" icon="flame" />
             <StatCard big={stageLog.length ? `${avgAcc}%` : '–'} label="평균 정답률" icon="check-bold" />
           </View>
 
-          {/* 주간 활동 */}
+          {/* 주간 활동 — ★막대 최대 92→72: 값라벨14+마진6+막대92+마진6+요일라벨15=133px가
+              height 116을 넘쳐 flex-end 기준 위로 밀리며 헤더의 '{n}단어' 라벨과 겹치던 버그. BoxDist(72)와도 통일 */}
           <SectionCard title="이번 주 학습" right={`${weekTotal}단어`}>
             <View style={{ flexDirection: 'row', alignItems: 'flex-end', justifyContent: 'space-between', height: 116, paddingTop: 8 }}>
               {week.map((x, i) => {
-                const h = x.n === 0 ? 4 : Math.round((x.n / maxN) * 92);
+                const h = x.n === 0 ? 4 : Math.round((x.n / maxN) * 72);
                 return (
                   <View key={i} style={{ flex: 1, alignItems: 'center' }}>
-                    <Text style={{ fontSize: 10, fontFamily: ff(700), color: x.today ? VP.accent : VP.textMute, height: 14 }}>{x.n > 0 ? x.n : ''}</Text>
+                    <Text style={{ fontSize: 11, fontFamily: ff(700), color: x.today ? VP.accent : VP.textMute, height: 15 }}>{x.n > 0 ? x.n : ''}</Text>
                     <View style={{ width: 22, height: h, borderRadius: 7, marginTop: 6, backgroundColor: x.n === 0 ? VP.surface2 : (x.today ? VP.accent : VP.accentSoft) }} />
                     <Text style={{ fontSize: 11, marginTop: 6, fontFamily: ff(x.today ? 700 : 500), color: x.today ? VP.accent : VP.textSub }}>{x.d}</Text>
                   </View>
@@ -183,13 +186,13 @@ export default function Stats({ state, dispatch }) {
               recentLog.map((s, i) => (
                 <View key={`${s.stage}-${s.ts}-${i}`} style={{ flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 10, borderTopWidth: i === 0 ? 0 : 1, borderTopColor: VP.divider }}>
                   <View style={{ width: 36, height: 36, borderRadius: 10, backgroundColor: VP.accentSoft, alignItems: 'center', justifyContent: 'center' }}>
-                    <Text style={{ fontSize: 13, fontFamily: ff(800), color: VP.accent }}>{s.stage}</Text>
+                    <Text style={{ fontSize: 13, fontFamily: ff(700), color: VP.accent }}>{s.stage}</Text>
                   </View>
                   <View style={{ flex: 1, minWidth: 0 }}>
                     <Text style={{ fontSize: 14, fontFamily: ff(700), color: VP.text, letterSpacing: ls(-0.02, 14) }}>{s.stage}걸음째 완료</Text>
                     <Text style={{ fontSize: 12, color: VP.textSub, marginTop: 1 }}>{s.date} · 단어 {s.words}개</Text>
                   </View>
-                  <Text style={{ fontSize: 13, fontFamily: ff(800), color: (s.acc >= 90 ? VP.ok : VP.text) }}>{s.acc}%</Text>
+                  <Text style={{ fontSize: 13, fontFamily: ff(700), color: (s.acc >= 90 ? VP.ok : VP.text) }}>{s.acc}%</Text>
                 </View>
               ))
             )}

@@ -17,11 +17,13 @@ function Donut({ value }) {
     Animated.timing(prog, { toValue: value, duration: 750, easing: Easing.out(Easing.cubic), useNativeDriver: false }).start();
   }, [value]);
   const offset = prog.interpolate({ inputRange: [0, 100], outputRange: [c, 0], extrapolate: 'clamp' });
+  // ★80% 이상이면 링을 초록으로 — 65%와 100%가 같은 핑크라 '잘했다'는 상향 보상이 없었음 (낮은 점수는 중립 유지, 빨강 처벌은 과함)
+  const ring = value >= 80 ? VP.ok : VP.accent;
   return (
     <View style={{ width: 160, height: 160 }}>
       <Svg width={160} height={160} viewBox="0 0 160 160">
         <Circle cx={80} cy={80} r={r} stroke={VP.surface2} strokeWidth={14} fill="none" />
-        <AnimatedCircle cx={80} cy={80} r={r} stroke={VP.accent} strokeWidth={14} fill="none"
+        <AnimatedCircle cx={80} cy={80} r={r} stroke={ring} strokeWidth={14} fill="none"
           strokeDasharray={`${c}`} strokeDashoffset={offset} strokeLinecap="round" transform="rotate(-90 80 80)" />
       </Svg>
       <View style={{ position: 'absolute', left: 0, top: 0, right: 0, bottom: 0, alignItems: 'center', justifyContent: 'center' }}>
@@ -32,10 +34,14 @@ function Donut({ value }) {
   );
 }
 
-function Stat({ label, value, color }) {
+/* ★보더 추가(통계 StatCard와 동일 규칙: 단독 카드는 divider 보더), 라벨 옆 아이콘 지원('획득 ⭐' 이모지 제거용) */
+function Stat({ label, value, color, icon }) {
   return (
-    <View style={{ flex: 1, paddingVertical: 12, paddingHorizontal: 8, backgroundColor: VP.surface, borderRadius: 12, alignItems: 'center' }}>
-      <Text style={{ fontSize: 20, fontFamily: ff(800), color, letterSpacing: ls(-0.025, 20) }}>{value}</Text>
+    <View style={{ flex: 1, paddingVertical: 12, paddingHorizontal: 8, backgroundColor: VP.surface, borderRadius: 12, borderWidth: 1, borderColor: VP.divider, alignItems: 'center' }}>
+      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+        {icon ? <Icon name={icon} size={14} color={color} /> : null}
+        <Text style={{ fontSize: 20, fontFamily: ff(800), color, letterSpacing: ls(-0.025, 20) }}>{value}</Text>
+      </View>
       <Text style={{ fontSize: 11, color: VP.textSub, fontFamily: ff(600), marginTop: 2 }}>{label}</Text>
     </View>
   );
@@ -51,19 +57,23 @@ export function ResultScore({ state, dispatch }) {
   const title = acc === 100 ? '완벽해요!' : acc >= 80 ? '잘했어요!' : acc >= 60 ? '괜찮아요' : '연습 더 해요';
   return (
     <View style={{ flex: 1, backgroundColor: VP.bg }}>
-      <View style={{ paddingTop: 20, paddingHorizontal: 20, paddingBottom: 6, alignItems: 'center' }}>
-        <Text style={{ fontSize: 12, color: VP.textMute, fontFamily: ff(700), letterSpacing: ls(0.08, 12) }}>퀴즈 점검 결과</Text>
-      </View>
+      {/* ★오버라인을 센터 그룹 안으로 — 상단에 고립돼 링과 ~465px 떨어져 떠 있었음. 링+판정+스탯이 한 그룹으로 광학 중앙 */}
       <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 20, gap: 14 }}>
+        <Text style={{ fontSize: 12, color: VP.textMute, fontFamily: ff(700), marginBottom: 2 }}>퀴즈 점검 결과</Text>
         <Donut value={acc} />
-        <Text style={{ fontSize: 30, fontFamily: ff(800), color: VP.text, letterSpacing: ls(-0.025, 30) }}>{title}</Text>
+        <Text style={{ fontSize: 28, fontFamily: ff(800), color: VP.text, letterSpacing: ls(-0.025, 28) }}>{title}</Text>
+        {/* ★'맞춤'(커스텀으로 오독)→'정답', '틀림'→'오답', '획득 ⭐'(유일한 이모지)→star 아이콘+'포인트' */}
         <View style={{ flexDirection: 'row', gap: 8, width: '100%', maxWidth: 360 }}>
-          <Stat label="맞춤" value={right} color={VP.ok} />
-          <Stat label="틀림" value={wrong} color={VP.bad} />
-          <Stat label="획득 ⭐" value={`+${earned}`} color={VP.accent} />
+          <Stat label="정답" value={right} color={VP.ok} />
+          <Stat label="오답" value={wrong} color={VP.bad} />
+          <Stat label="포인트" value={`+${earned}`} color={VP.accent} icon="star" />
         </View>
       </View>
       <ProtoFooter>
+        {/* ★오답이 있으면 즉시 복습 경로 제공 — '틀림 N'을 보여주고도 후속 액션이 홈뿐이라 학습 루프가 끊겼음 */}
+        {wrong > 0 ? (
+          <VPButton variant="soft" icon="flame" label="헷갈리는 단어 복습하기" onPress={() => dispatch({ type: 'START_CONFUSING_REVIEW' })} />
+        ) : null}
         <VPButton variant="accent" label={state.quizReturn === 'vocab' ? '단어장으로' : '홈으로'} iconRight="arrow-right" onPress={() => dispatch({ type: 'GO', screen: state.quizReturn || 'home' })} />
       </ProtoFooter>
     </View>

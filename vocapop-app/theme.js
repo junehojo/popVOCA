@@ -3,7 +3,8 @@
    다음 렌더에서 전 화면이 자동으로 다크/라이트로 바뀐다 (화면 코드 수정 불필요).
    ⚠️ 모듈 로드 시점에 VP.xxx 를 상수로 캡처하면 안 됨(active 변경에 안 따라옴) — ui.js VARIANTS 는 render-time 으로 옮김. */
 
-const radii = { rSm: 8, rMd: 12, rLg: 16, rXl: 20, rPill: 999 };
+/* ★rSheet 추가: 바텀시트 상단 radius가 24/26 혼재였음 — 24 하나로 통일해 토큰화 */
+const radii = { rSm: 8, rMd: 12, rLg: 16, rXl: 20, rSheet: 24, rPill: 999 };
 
 const VP_LIGHT = {
   ...radii,

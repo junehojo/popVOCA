@@ -49,7 +49,7 @@
   <tr>
     <td align="center"><img src="docs/screenshots/onboarding.png" width="230" alt="온보딩"/><br/><sub><b>온보딩</b><br/>계단 오르기 학습 소개</sub></td>
     <td align="center"><img src="docs/screenshots/home.png" width="230" alt="홈 · 계단 진도"/><br/><sub><b>홈 · 계단 진도</b><br/>걸음마다 20단어씩 해금</sub></td>
-    <td align="center"><img src="docs/screenshots/lesson-select.png" width="230" alt="레슨 선택"/><br/><sub><b>레슨 선택</b><br/>플래시카드 · 퀴즈 진입</sub></td>
+    <td align="center"><img src="docs/screenshots/lesson-preview.png" width="230" alt="레슨 미리보기"/><br/><sub><b>레슨 미리보기</b><br/>이번에 외울 20단어 훑기</sub></td>
   </tr>
   <tr>
     <td align="center"><img src="docs/screenshots/flashcard-front.png" width="230" alt="플래시카드 앞면"/><br/><sub><b>플래시카드 (앞)</b><br/>단어 · 발음 · TTS</sub></td>

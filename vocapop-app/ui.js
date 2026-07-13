@@ -99,10 +99,12 @@ export function SpeakButton({ text, size = 38 }) {
   );
 }
 
+/* ★radius를 토큰(rLg 16/rMd 12)에 스냅 — 기존 14/10은 radii 토큰 밖 임의값이라 화면마다 드리프트 원인.
+   lg 폰트 16→17: 주요 CTA 라벨을 리스트 타이틀(17)과 같은 단계로 — 스케일 통합 */
 const SIZES = {
-  lg: { height: 56, fontSize: 16, radius: 14, padX: 20 },
+  lg: { height: 56, fontSize: 17, radius: 16, padX: 20 },
   md: { height: 48, fontSize: 15, radius: 12, padX: 18 },
-  sm: { height: 40, fontSize: 14, radius: 10, padX: 14 },
+  sm: { height: 40, fontSize: 14, radius: 12, padX: 14 },
 };
 /* 3D 푸시 버튼. icon(좌)/label/iconRight(우) 조합. 누르면 면이 lift만큼 내려가 그림자를 덮음.
    VARIANTS 는 VP 게터를 렌더 시점에 읽도록 컴포넌트 안에서 구성(다크모드 즉시 반영). */
@@ -118,7 +120,7 @@ export function VPButton({ label, icon, iconRight, children, variant = 'default'
     bad:      { bg: VP.bad,         color: '#fff',    shade: VP.badDeep,     weight: 800 },
   };
   const v = VARIANTS[variant] || VARIANTS.default;
-  const liftBase = variant === 'ghost' ? 0 : 5;
+  const liftBase = variant === 'ghost' ? 0 : 4;   // ★5→4: QuizOption·StepRow·플래시카드 그림자가 전부 4px — 3D 깊이 통일
   const ty = useRef(new Animated.Value(0)).current;
   const animate = (to) => Animated.timing(ty, { toValue: to, duration: 80, useNativeDriver: true }).start();
   const iconSize = sz.fontSize;
@@ -171,8 +173,9 @@ export function VPProgress({ value = 0, height = 4, color = VP.accent, track = V
 export function ProtoTopBar({ onBack, icon, label, right, progress, progressColor, onOverlay }) {
   return (
     <View>
-      <View style={{ paddingTop: 14, paddingHorizontal: 20, paddingBottom: 10, flexDirection: 'row', alignItems: 'center' }}>
-        <Pressable onPress={onBack} style={{ width: 36, height: 36, alignItems: 'center', justifyContent: 'center', borderRadius: 10 }}>
+      <View style={{ paddingTop: 14, paddingHorizontal: 20, paddingBottom: 8, flexDirection: 'row', alignItems: 'center' }}>
+        {/* ★✕ 36→44: 모든 학습 화면의 유일한 이탈 버튼인데 44px 터치 타깃 미달이었음. marginLeft -4로 좌측 시각 정렬 유지 */}
+        <Pressable onPress={onBack} style={{ width: 44, height: 44, marginLeft: -4, alignItems: 'center', justifyContent: 'center', borderRadius: 12 }}>
           <Icon name="x" size={20} color={VP.text} />
         </Pressable>
         <View style={{ flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center' }}>
@@ -180,7 +183,7 @@ export function ProtoTopBar({ onBack, icon, label, right, progress, progressColo
           {label ? <Text style={{ marginLeft: icon ? 6 : 0, fontSize: 14, fontFamily: ff(700), color: VP.text, letterSpacing: ls(-0.02, 14) }}>{label}</Text> : null}
         </View>
         {onOverlay ? (
-          <Pressable onPress={onOverlay} style={{ width: 34, height: 34, borderRadius: 10, backgroundColor: VP.accentSoft, alignItems: 'center', justifyContent: 'center', marginLeft: 4 }}>
+          <Pressable onPress={onOverlay} hitSlop={5} style={{ width: 34, height: 34, borderRadius: 10, backgroundColor: VP.accentSoft, alignItems: 'center', justifyContent: 'center', marginLeft: 4 }}>
             <Icon name="pip" size={18} color={VP.accent} />
           </Pressable>
         ) : null}
@@ -212,7 +215,7 @@ export function ListEmpty({ title, sub, icon, accent, cta }) {
       }}>
         <Icon name={icon} size={26} color={accent ? VP.accent : VP.textMute} />
       </View>
-      <Text style={{ fontSize: 16, fontFamily: ff(700), color: VP.text, letterSpacing: ls(-0.02, 16), textAlign: 'center' }}>{title}</Text>
+      <Text style={{ fontSize: 17, fontFamily: ff(700), color: VP.text, letterSpacing: ls(-0.02, 17), textAlign: 'center' }}>{title}</Text>
       <Text style={{ fontSize: 13, color: VP.textSub, lineHeight: 19, textAlign: 'center', marginTop: 6 }}>{sub}</Text>
       {cta ? (
         <View style={{ width: '100%', maxWidth: 240, marginTop: 16 }}>

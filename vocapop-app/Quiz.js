@@ -53,19 +53,21 @@ function QuizOption({ label, onPress, disabled, submitted, isPicked, isAnswer })
   }
   return (
     <Pressable disabled={disabled} onPress={onPress} style={{ height: 56 }}>
-      {shade ? <View style={{ position: 'absolute', left: 0, right: 0, top: 4, bottom: -4, borderRadius: 14, backgroundColor: shade }} /> : null}
-      <View style={{ height: 56, borderRadius: 14, backgroundColor: bg, borderWidth: ring ? 1.5 : 0, borderColor: ring || 'transparent', flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 18 }}>
-        <Text style={{ flex: 1, fontSize: 16, fontFamily: ff(700), color, letterSpacing: ls(-0.02, 16) }}>{label}</Text>
+      {/* ★radius 14→16(rLg 토큰 스냅)·라벨 16→17: VPButton lg와 동일 규격으로 — 같은 화면에서 버튼 곡률·글자 크기가 달랐음 */}
+      {shade ? <View style={{ position: 'absolute', left: 0, right: 0, top: 4, bottom: -4, borderRadius: 16, backgroundColor: shade }} /> : null}
+      <View style={{ height: 56, borderRadius: 16, backgroundColor: bg, borderWidth: ring ? 1.5 : 0, borderColor: ring || 'transparent', flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 18 }}>
+        <Text style={{ flex: 1, fontSize: 17, fontFamily: ff(700), color, letterSpacing: ls(-0.02, 17) }}>{label}</Text>
         {icon}
       </View>
     </Pressable>
   );
 }
 
-/* 잘 모르겠어요 / 몰라요 — 객관식·타일·듣기 공용 escape 버튼 */
-function DontknowButton({ onPress, label = '잘 모르겠어요' }) {
+/* 잘 모르겠어요 / 몰라요 — 객관식·타일·듣기 공용 escape 버튼.
+   ★기본 라벨 '몰라요'로 통일: 유형마다 '몰라요'/'잘 모르겠어요'가 섞여 다른 기능처럼 보였음 */
+function DontknowButton({ onPress, label = '몰라요' }) {
   return (
-    <Pressable onPress={onPress} hitSlop={8} style={{ alignSelf: 'center', marginTop: 14, paddingVertical: 8, paddingHorizontal: 18 }}>
+    <Pressable onPress={onPress} hitSlop={8} style={{ alignSelf: 'center', marginTop: 16, paddingVertical: 8, paddingHorizontal: 16 }}>
       <Text style={{ fontSize: 14, color: VP.textMute, fontFamily: ff(600), textDecorationLine: 'underline' }}>{label}</Text>
     </Pressable>
   );
@@ -93,8 +95,8 @@ function FeedbackSheet({ correct, word, type, note, onNext, onHeight }) {
   return (
     <Animated.View onLayout={onLayout} style={{
       position: 'absolute', left: 0, right: 0, bottom: 0,
-      backgroundColor: bg, paddingHorizontal: 20, paddingTop: 22, paddingBottom: 28,
-      borderTopLeftRadius: 24, borderTopRightRadius: 24, gap: 14,
+      backgroundColor: bg, paddingHorizontal: 20, paddingTop: 24, paddingBottom: 28,
+      borderTopLeftRadius: VP.rSheet, borderTopRightRadius: VP.rSheet, gap: 16,
       transform: [{ translateY: ty }], opacity: op,
     }}>
       <View style={{ flexDirection: 'row', alignItems: 'center' }}>
@@ -102,7 +104,7 @@ function FeedbackSheet({ correct, word, type, note, onNext, onHeight }) {
           {correct ? <Icon name="check-bold" size={20} color="#fff" /> : <Icon name="x" size={20} color="#fff" strokeWidth={2.5} />}
         </View>
         <View style={{ flex: 1 }}>
-          <Text style={{ fontSize: 17, fontFamily: ff(800), color: fg, letterSpacing: ls(-0.02, 17) }}>{correct ? '정답이에요!' : '아쉬워요'}</Text>
+          <Text style={{ fontSize: 17, fontFamily: ff(700), color: fg, letterSpacing: ls(-0.02, 17) }}>{correct ? '정답이에요!' : '아쉬워요'}</Text>
           <Text style={{ fontSize: 13, color: fg, opacity: 0.75, marginTop: 3, lineHeight: 18 }}>
             <Text style={{ fontFamily: ff(700) }}>{word.word}</Text> · {meaningList(word).slice(0, 2).join(', ')}
           </Text>
@@ -110,8 +112,8 @@ function FeedbackSheet({ correct, word, type, note, onNext, onHeight }) {
         </View>
       </View>
       {type === 'blank' && word.exampleKor ? (
-        <View style={{ paddingHorizontal: 13, paddingVertical: 11, backgroundColor: VP.bg, opacity: 0.92, borderRadius: 12 }}>
-          <UnderlinedKor text={word.exampleKor} style={{ fontSize: 13.5, color: fg, lineHeight: 20 }} />
+        <View style={{ paddingHorizontal: 12, paddingVertical: 12, backgroundColor: VP.bg, opacity: 0.92, borderRadius: 12 }}>
+          <UnderlinedKor text={word.exampleKor} style={{ fontSize: 13, color: fg, lineHeight: 20 }} />
         </View>
       ) : null}
       <VPButton variant={correct ? 'ok' : 'bad'} label="다음" iconRight="arrow-right" onPress={onNext} />
@@ -124,15 +126,21 @@ export function QuizView({ type, word, pool, options: fixedOptions, progress, on
   const [selected, setSelected] = useState(null);
   const [submitted, setSubmitted] = useState(false);
   const [sheetH, setSheetH] = useState(0);   // 피드백 시트 높이(보기 끌어올림용)
+  const [wrapH, setWrapH] = useState(0);     // ★보기 래퍼 높이 — 센터 배치 여백(slack) 계산용
+  const [optBox, setOptBox] = useState(null); // ★보기 그룹 {y,h} (transform 무관한 레이아웃 좌표)
   const optLift = useRef(new Animated.Value(0)).current;
   // 동결 보기(fixedOptions)가 있으면 그대로 사용, 없으면(오답노트·SRS 동적 풀) pickOptions로 생성
   const computed = useMemo(() => pickOptions(pool, word), [word && word.id]); // eslint-disable-line
   const options = (fixedOptions && fixedOptions.length === 4) ? fixedOptions : computed;
   useEffect(() => { setSelected(null); setSubmitted(false); setSheetH(0); }, [word && word.id]);
-  // 제출하면 보기를 시트 높이만큼 위로 올려, 내가 고른 보기가 피드백 시트에 안 가리게
+  // ★보기를 flex-end→center로 옮기며(중앙 40%가 죽은 공간이던 문제) 리프트를 '시트에 가리는 만큼만'으로:
+  //   기존 -sheetH 고정 리프트는 바닥 앵커 전제 — 센터 배치에선 아래 여백(slack)을 차감해야
+  //   보기가 문제 블록을 침범하지 않고 시트 위에 정확히 얹힌다.
   useEffect(() => {
-    Animated.timing(optLift, { toValue: submitted && sheetH ? -sheetH : 0, duration: 280, easing: Easing.out(Easing.cubic), useNativeDriver: true }).start();
-  }, [submitted, sheetH]);
+    const slack = (wrapH && optBox) ? Math.max(0, wrapH - (optBox.y + optBox.h)) : 0;
+    const to = submitted && sheetH ? -Math.max(0, sheetH - slack + 8) : 0;   // +8: 시트 상단과 최소 간격
+    Animated.timing(optLift, { toValue: to, duration: 280, easing: Easing.out(Easing.cubic), useNativeDriver: true }).start();
+  }, [submitted, sheetH, wrapH, optBox]);
   if (!word) return null;
 
   const isCorrect = submitted && selected != null && options[selected].id === word.id;
@@ -155,9 +163,10 @@ export function QuizView({ type, word, pool, options: fixedOptions, progress, on
     <View style={{ flex: 1, backgroundColor: VP.bg }}>
       <ProtoTopBar onBack={onBack} icon={<Icon name={typeIcon} size={16} color={VP.text} />} label={typeLabel} progress={progress} progressColor={VP.accent} />
 
-      {/* 문제 */}
-      <View style={{ marginTop: 32, paddingHorizontal: 20, alignItems: 'center' }}>
-        <Text style={{ fontSize: 12, color: VP.textMute, fontFamily: ff(600), letterSpacing: ls(0.06, 12), marginBottom: 12 }}>
+      {/* 문제 — ★marginTop 32→28: 4개 퀴즈 유형의 상단 간격 통일(유형 회전 시 문제가 위아래로 튀던 문제) */}
+      <View style={{ marginTop: 28, paddingHorizontal: 20, alignItems: 'center' }}>
+        {/* ★킥커 양수 자간 제거: 한글은 양수 자간에서 글자가 흩어져 보임 (영문 오버라인 관행 오적용) */}
+        <Text style={{ fontSize: 12, color: VP.textMute, fontFamily: ff(600), marginBottom: 12 }}>
           {type === 'meaning' ? '이 단어의 뜻은?' : type === 'word' ? '이 뜻을 가진 단어는?' : '빈칸에 들어갈 단어는?'}
         </Text>
         {type === 'meaning' ? (
@@ -166,22 +175,28 @@ export function QuizView({ type, word, pool, options: fixedOptions, progress, on
             <Text style={{ fontSize: 44, fontFamily: ff(800), color: VP.text, letterSpacing: ls(-0.03, 44), textAlign: 'center' }}>{word.word}</Text>
           </>
         ) : type === 'word' ? (
-          <Text style={{ fontSize: 26, fontFamily: ff(700), color: VP.text, letterSpacing: ls(-0.02, 26), lineHeight: 34, textAlign: 'center' }}>{meaningList(word).join(' · ')}</Text>
+          /* ★26→22: 뜻 지문 크기를 타일/스펠 유형(22)과 통일 — 한 세션에서 유형 회전 시 지문 크기가 튀었음 */
+          <Text style={{ fontSize: 22, fontFamily: ff(700), color: VP.text, letterSpacing: ls(-0.02, 22), lineHeight: 30, textAlign: 'center' }}>{meaningList(word).join(' · ')}</Text>
         ) : (
           <Text style={{ fontSize: 20, fontFamily: ff(600), color: VP.text, letterSpacing: ls(-0.015, 20), lineHeight: 30, textAlign: 'center' }}>"{blankExample(word)}"</Text>
         )}
       </View>
 
-      {/* 보기 — 제출 시 위로 올라가 선택 보기가 시트에 안 가림 */}
-      <View style={{ flex: 1, paddingHorizontal: 20, paddingTop: 24, paddingBottom: 12, justifyContent: 'flex-end' }}>
-        <Animated.View style={{ gap: 10, transform: [{ translateY: optLift }] }}>
+      {/* 보기 — ★flex-end→center: 문제/보기 사이 죽은 공간을 위아래로 배분. 제출 시 slack 차감 리프트로 시트 위에 얹힘 */}
+      <View onLayout={(e) => setWrapH(e.nativeEvent.layout.height)}
+        style={{ flex: 1, paddingHorizontal: 20, paddingTop: 24, paddingBottom: 12, justifyContent: 'center' }}>
+        <Animated.View onLayout={(e) => setOptBox({ y: e.nativeEvent.layout.y, h: e.nativeEvent.layout.height })}
+          style={{ gap: 10, transform: [{ translateY: optLift }] }}>
           {options.map((opt, i) => (
             <QuizOption key={opt.id} label={optionLabel(opt)} disabled={submitted}
               submitted={submitted} isPicked={selected === i} isAnswer={opt.id === word.id}
               onPress={() => handleSelect(i)} />
           ))}
         </Animated.View>
-        {!submitted ? <DontknowButton onPress={handleDontknow} label="몰라요" /> : null}
+        {/* 제출 후에도 자리 유지(opacity) — 조건부 제거 시 센터 재정렬로 보기가 점프함 */}
+        <View style={{ opacity: submitted ? 0 : 1 }} pointerEvents={submitted ? 'none' : 'auto'}>
+          <DontknowButton onPress={handleDontknow} />
+        </View>
       </View>
 
       {submitted && <FeedbackSheet correct={isCorrect} word={word} type={type} onNext={onNext} onHeight={setSheetH} />}
@@ -196,36 +211,45 @@ function ListenQuiz({ word, options, progress, onBack, onResult, onNext }) {
   const [selected, setSelected] = useState(null);
   const [submitted, setSubmitted] = useState(false);
   const [sheetH, setSheetH] = useState(0);
+  const [wrapH, setWrapH] = useState(0);
+  const [optBox, setOptBox] = useState(null);
   const optLift = useRef(new Animated.Value(0)).current;
   useEffect(() => {
     setSelected(null); setSubmitted(false); setSheetH(0);
     const t = setTimeout(() => speak(word.word), 350);   // 마운트 시 한 번 자동 재생
     return () => clearTimeout(t);
   }, [word && word.id]);
+  // ★QuizView와 동일한 센터 배치 + slack 차감 리프트 (설명은 QuizView 참조)
   useEffect(() => {
-    Animated.timing(optLift, { toValue: submitted && sheetH ? -sheetH : 0, duration: 280, easing: Easing.out(Easing.cubic), useNativeDriver: true }).start();
-  }, [submitted, sheetH]);
+    const slack = (wrapH && optBox) ? Math.max(0, wrapH - (optBox.y + optBox.h)) : 0;
+    const to = submitted && sheetH ? -Math.max(0, sheetH - slack + 8) : 0;
+    Animated.timing(optLift, { toValue: to, duration: 280, easing: Easing.out(Easing.cubic), useNativeDriver: true }).start();
+  }, [submitted, sheetH, wrapH, optBox]);
   if (!word) return null;
   const isCorrect = submitted && selected != null && options[selected].id === word.id;
   const pick = (i) => { if (submitted) return; setSelected(i); setSubmitted(true); onResult(options[i].id === word.id ? 'correct' : 'wrong'); };
   return (
     <View style={{ flex: 1, backgroundColor: VP.bg }}>
       <ProtoTopBar onBack={onBack} icon={<Icon name="speaker" size={16} color={VP.text} />} label="듣고 맞히기" progress={progress} progressColor={VP.accent} />
-      <View style={{ marginTop: 30, paddingHorizontal: 20, alignItems: 'center' }}>
-        <Text style={{ fontSize: 12, color: VP.textMute, fontFamily: ff(600), letterSpacing: ls(0.06, 12), marginBottom: 20 }}>들리는 단어의 뜻은?</Text>
+      <View style={{ marginTop: 28, paddingHorizontal: 20, alignItems: 'center' }}>
+        <Text style={{ fontSize: 12, color: VP.textMute, fontFamily: ff(600), marginBottom: 20 }}>들리는 단어의 뜻은?</Text>
         <Pressable onPress={() => speak(word.word)} style={{ width: 96, height: 96, borderRadius: 48, backgroundColor: VP.accentSoft, alignItems: 'center', justifyContent: 'center' }}>
           <Icon name="speaker" size={42} color={VP.accent} />
         </Pressable>
         <Text style={{ fontSize: 12, color: VP.textMute, marginTop: 12 }}>다시 들으려면 탭하세요</Text>
       </View>
-      <View style={{ flex: 1, paddingHorizontal: 20, paddingTop: 18, paddingBottom: 12, justifyContent: 'flex-end' }}>
-        <Animated.View style={{ gap: 10, transform: [{ translateY: optLift }] }}>
+      <View onLayout={(e) => setWrapH(e.nativeEvent.layout.height)}
+        style={{ flex: 1, paddingHorizontal: 20, paddingTop: 24, paddingBottom: 12, justifyContent: 'center' }}>
+        <Animated.View onLayout={(e) => setOptBox({ y: e.nativeEvent.layout.y, h: e.nativeEvent.layout.height })}
+          style={{ gap: 10, transform: [{ translateY: optLift }] }}>
           {options.map((opt, i) => (
             <QuizOption key={opt.id} label={meaningList(opt)[0] || opt.korean} disabled={submitted}
               submitted={submitted} isPicked={selected === i} isAnswer={opt.id === word.id} onPress={() => pick(i)} />
           ))}
         </Animated.View>
-        {!submitted ? <DontknowButton onPress={() => { setSelected(null); setSubmitted(true); onResult('dontknow'); }} label="몰라요" /> : null}
+        <View style={{ opacity: submitted ? 0 : 1 }} pointerEvents={submitted ? 'none' : 'auto'}>
+          <DontknowButton onPress={() => { setSelected(null); setSubmitted(true); onResult('dontknow'); }} />
+        </View>
       </View>
       {submitted && <FeedbackSheet correct={isCorrect} word={word} type="" onNext={onNext} onHeight={setSheetH} />}
     </View>
@@ -265,27 +289,30 @@ function TileQuiz({ word, progress, onBack, onResult, onNext }) {
     <View style={{ flex: 1, backgroundColor: VP.bg }}>
       <ProtoTopBar onBack={onBack} icon={<Icon name="letters" size={16} color={VP.text} />} label="글자 맞추기" progress={progress} progressColor={VP.accent} />
       <View style={{ marginTop: 28, paddingHorizontal: 20, alignItems: 'center' }}>
-        <Text style={{ fontSize: 12, color: VP.textMute, fontFamily: ff(600), letterSpacing: ls(0.06, 12), marginBottom: 6 }}>이 뜻의 단어를 만드세요</Text>
+        <Text style={{ fontSize: 12, color: VP.textMute, fontFamily: ff(600), marginBottom: 6 }}>이 뜻의 단어를 만드세요</Text>
         <Text style={{ fontSize: 11, color: VP.textMute, fontStyle: 'italic' }}>{word.pos}</Text>
-        <Text style={{ fontSize: 23, fontFamily: ff(700), color: VP.text, textAlign: 'center', lineHeight: 31, marginTop: 2 }}>{meaningList(word).join(' · ')}</Text>
+        {/* ★23→22 + 자간: 지문 크기를 다른 유형과 통일 */}
+        <Text style={{ fontSize: 22, fontFamily: ff(700), color: VP.text, letterSpacing: ls(-0.02, 22), textAlign: 'center', lineHeight: 30, marginTop: 2 }}>{meaningList(word).join(' · ')}</Text>
       </View>
-      {/* 정답 슬롯 */}
-      <View style={{ flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center', gap: 8, marginTop: 26, paddingHorizontal: 20 }}>
-        {Array.from({ length: target.length }).map((_, i) => {
-          const key = placed[i];
-          const filled = key !== undefined;
-          return (
-            <Pressable key={i} onPress={() => filled && !submitted && setPlaced(placed.filter((_, j) => j !== i))} disabled={submitted || !filled}
-              style={{ width: 38, height: 46, borderRadius: 10, alignItems: 'center', justifyContent: 'center',
-                backgroundColor: filled ? VP.accent : VP.surface, borderWidth: filled ? 0 : 1.5, borderColor: VP.border, borderStyle: filled ? 'solid' : 'dashed' }}>
-              <Text style={{ fontSize: 20, fontFamily: ff(700), color: filled ? '#fff' : VP.textMute }}>{filled ? charOf(key) : ''}</Text>
-            </Pressable>
-          );
-        })}
-      </View>
-      {/* 타일 뱅크 */}
-      <View style={{ flex: 1, justifyContent: 'flex-end', paddingBottom: 12 }}>
-        <View style={{ flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center', gap: 9, paddingHorizontal: 20 }}>
+      {/* ★슬롯+타일을 한 그룹으로 중앙 배치 — 기존엔 슬롯은 상단·타일은 바닥으로 찢어져(~950px 간격)
+          조작할 때마다 시선·손가락이 화면 전체를 왕복했음. 몰라요만 하단 고정 유지 */}
+      <View style={{ flex: 1, justifyContent: 'center', gap: 36 }}>
+        {/* 정답 슬롯 */}
+        <View style={{ flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center', gap: 8, paddingHorizontal: 20 }}>
+          {Array.from({ length: target.length }).map((_, i) => {
+            const key = placed[i];
+            const filled = key !== undefined;
+            return (
+              <Pressable key={i} onPress={() => filled && !submitted && setPlaced(placed.filter((_, j) => j !== i))} disabled={submitted || !filled}
+                style={{ width: 38, height: 48, borderRadius: 10, alignItems: 'center', justifyContent: 'center',
+                  backgroundColor: filled ? VP.accent : VP.surface, borderWidth: filled ? 0 : 1.5, borderColor: VP.border, borderStyle: filled ? 'solid' : 'dashed' }}>
+                <Text style={{ fontSize: 20, fontFamily: ff(700), color: filled ? '#fff' : VP.textMute }}>{filled ? charOf(key) : ''}</Text>
+              </Pressable>
+            );
+          })}
+        </View>
+        {/* 타일 뱅크 */}
+        <View style={{ flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center', gap: 8, paddingHorizontal: 20 }}>
           {available.map(t => (
             <Pressable key={t.key} onPress={() => place(t.key)} disabled={submitted}
               style={{ minWidth: 42, height: 50, paddingHorizontal: 6, borderRadius: 12, backgroundColor: VP.bg, borderWidth: 1.5, borderColor: VP.pushRing, alignItems: 'center', justifyContent: 'center' }}>
@@ -293,7 +320,9 @@ function TileQuiz({ word, progress, onBack, onResult, onNext }) {
             </Pressable>
           ))}
         </View>
-        {!submitted ? <DontknowButton onPress={() => { setFbCorrect(false); setSubmitted(true); onResult('dontknow'); }} /> : null}
+      </View>
+      <View style={{ paddingBottom: 12, opacity: submitted ? 0 : 1 }} pointerEvents={submitted ? 'none' : 'auto'}>
+        <DontknowButton onPress={() => { setFbCorrect(false); setSubmitted(true); onResult('dontknow'); }} />
       </View>
       {submitted && <FeedbackSheet correct={fbCorrect} word={word} type="" onNext={onNext} onHeight={setSheetH} />}
     </View>
@@ -329,10 +358,12 @@ function SpellQuiz({ word, progress, onBack, onResult, onNext }) {
   return (
     <View style={{ flex: 1, backgroundColor: VP.bg }}>
       <ProtoTopBar onBack={onBack} icon={<Icon name="pencil" size={16} color={VP.text} />} label="스펠링 입력" progress={progress} progressColor={VP.accent} />
-      <View style={{ paddingHorizontal: 24, paddingTop: 28, alignItems: 'center' }}>
-        <Text style={{ fontSize: 12, color: VP.textMute, fontFamily: ff(600), letterSpacing: ls(0.06, 12), marginBottom: 6 }}>이 뜻의 단어를 입력하세요</Text>
+      {/* ★pH 24→20: 6개 퀴즈 유형 중 이 화면만 24라 유형 회전 시 좌우가 4px씩 움직여 보였음.
+          상단 고정 배치는 유지 — 키보드가 하단을 차지하므로 센터 배치가 오히려 어색함 (의도적 예외) */}
+      <View style={{ paddingHorizontal: 20, paddingTop: 28, alignItems: 'center' }}>
+        <Text style={{ fontSize: 12, color: VP.textMute, fontFamily: ff(600), marginBottom: 6 }}>이 뜻의 단어를 입력하세요</Text>
         <Text style={{ fontSize: 11, color: VP.textMute, fontStyle: 'italic' }}>{word.pos}</Text>
-        <Text style={{ fontSize: 23, fontFamily: ff(700), color: VP.text, textAlign: 'center', lineHeight: 31, marginTop: 2 }}>{meaningList(word).join(' · ')}</Text>
+        <Text style={{ fontSize: 22, fontFamily: ff(700), color: VP.text, letterSpacing: ls(-0.02, 22), textAlign: 'center', lineHeight: 30, marginTop: 2 }}>{meaningList(word).join(' · ')}</Text>
         {hintUsed ? (
           <Text style={{ fontSize: 14, color: VP.accent, fontFamily: ff(700), marginTop: 16 }}>
             첫 글자 <Text style={{ fontSize: 18 }}>{target[0].toUpperCase()}</Text>   ·   {target.length}글자
@@ -341,14 +372,15 @@ function SpellQuiz({ word, progress, onBack, onResult, onNext }) {
         <TextInput
           value={val} onChangeText={setVal} autoCapitalize="none" autoCorrect={false} autoFocus
           editable={!submitted} onSubmitEditing={submit} returnKeyType="done" placeholder="단어 입력"
-          placeholderTextColor={VP.textMute}
-          style={{ marginTop: 18, width: '100%', textAlign: 'center', fontSize: 28, fontFamily: ff(700), color: VP.text, borderBottomWidth: 2, borderBottomColor: VP.accent, paddingVertical: 8 }} />
+          placeholderTextColor={VP.textMute} selectionColor={VP.accent}
+          /* ★웹 기본 파란 focus outline 제거 — 핑크 테마 안에서 브랜드와 무관한 파랑이 튀었음 (RN-web 전용 속성, 네이티브 무해) */
+          style={{ marginTop: 18, width: '100%', textAlign: 'center', fontSize: 28, fontFamily: ff(700), color: VP.text, borderBottomWidth: 2, borderBottomColor: VP.accent, paddingVertical: 8, outlineStyle: 'none' }} />
         {!submitted ? (
           <View style={{ width: '100%', marginTop: 22, gap: 10 }}>
             <VPButton variant="accent" label="확인" onPress={submit} />
             <Pressable onPress={hintBtn} hitSlop={8} style={{ alignSelf: 'center', paddingVertical: 8, paddingHorizontal: 18 }}>
               <Text style={{ fontSize: 14, color: hintUsed ? VP.bad : VP.textMute, fontFamily: ff(600), textDecorationLine: 'underline' }}>
-                {hintUsed ? '잘 모르겠어요' : '힌트 · 첫 글자 보기'}
+                {hintUsed ? '몰라요' : '힌트 · 첫 글자 보기'}
               </Text>
             </Pressable>
           </View>

@@ -26,9 +26,10 @@ const LOCK_SCOPES = [
 
 function SheetChip({ on, label, onPress }) {
   return (
+    /* ★단어장 FilterChip과 규격 통일 (pH 12/pV 8/border 1.5/비활성 bg) — 같은 pill 칩인데 4개 값이 전부 달랐음 */
     <Pressable onPress={onPress} style={{
-      paddingHorizontal: 13, paddingVertical: 9, borderRadius: 999,
-      backgroundColor: on ? VP.accent : VP.surface2, borderWidth: on ? 0 : 1, borderColor: VP.border,
+      paddingHorizontal: 12, paddingVertical: 8, borderRadius: 999,
+      backgroundColor: on ? VP.accent : VP.bg, borderWidth: on ? 0 : 1.5, borderColor: VP.border,
     }}>
       <Text style={{ fontSize: 13, fontFamily: ff(700), color: on ? '#fff' : VP.textSub }}>{label}</Text>
     </Pressable>
@@ -38,7 +39,7 @@ function SheetChip({ on, label, onPress }) {
 function ChipGroup({ title, options, value, onSelect }) {
   return (
     <View style={{ marginBottom: 16 }}>
-      <Text style={{ fontSize: 12, fontFamily: ff(800), color: VP.textSub, marginBottom: 8 }}>{title}</Text>
+      <Text style={{ fontSize: 13, fontFamily: ff(700), color: VP.textSub, letterSpacing: ls(-0.01, 13), marginBottom: 8 }}>{title}</Text>
       <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 7 }}>
         {options.map(o => <SheetChip key={String(o.v)} on={value === o.v} label={o.l} onPress={() => onSelect(o.v)} />)}
       </View>
@@ -52,15 +53,15 @@ function LockSheet({ visible, s, set, onClose }) {
   return (
     <Modal visible transparent animationType="fade" statusBarTranslucent onRequestClose={onClose}>
       <Pressable style={{ flex: 1, backgroundColor: 'rgba(8,10,16,0.45)' }} onPress={onClose} />
-      <View style={{ position: 'absolute', left: 0, right: 0, bottom: 0, backgroundColor: VP.bg, borderTopLeftRadius: 24, borderTopRightRadius: 24, paddingHorizontal: 22, paddingTop: 10, paddingBottom: 24 }}>
+      <View style={{ position: 'absolute', left: 0, right: 0, bottom: 0, backgroundColor: VP.bg, borderTopLeftRadius: VP.rSheet, borderTopRightRadius: VP.rSheet, paddingHorizontal: 20, paddingTop: 10, paddingBottom: 24 }}>
         <View style={{ alignItems: 'center', paddingTop: 4, paddingBottom: 12 }}>
           <View style={{ width: 40, height: 5, borderRadius: 999, backgroundColor: VP.border }} />
         </View>
-        <Text style={{ fontSize: 18, fontFamily: ff(800), color: VP.text, letterSpacing: ls(-0.02, 18), marginBottom: 14 }}>잠금학습 설정</Text>
+        <Text style={{ fontSize: 18, fontFamily: ff(700), color: VP.text, letterSpacing: ls(-0.02, 18), marginBottom: 14 }}>잠금학습 설정</Text>
         <ChipGroup title="방식" options={LOCK_MODES} value={s.lockMode || 'quiz'} onSelect={(v) => set('lockMode', v)} />
         <ChipGroup title="빈도" options={LOCK_FREQS} value={s.lockInterval == null ? 30 : s.lockInterval} onSelect={(v) => set('lockInterval', v)} />
         <ChipGroup title="출제 범위" options={LOCK_SCOPES} value={s.lockScope || 'confusing'} onSelect={(v) => set('lockScope', v)} />
-        <Text style={{ fontSize: 11.5, color: VP.textMute, lineHeight: 16, marginTop: -6, marginBottom: 14 }}>선택한 범위에 단어가 없으면 학습한 단어 → 전체 순으로 대신 나와요</Text>
+        <Text style={{ fontSize: 12, color: VP.textMute, lineHeight: 17, marginTop: -6, marginBottom: 14 }}>선택한 범위에 단어가 없으면 학습한 단어 → 전체 순으로 대신 나와요</Text>
         <VPButton variant="accent" size="md" icon="pip" label="이 설정으로 미리보기" onPress={() => { onClose(); setTimeout(() => Overlay.showLockCard(), 350); }} />
       </View>
     </Modal>
@@ -90,7 +91,7 @@ function RowBase({ icon, label, danger, last, children, onPress }) {
   const color = danger ? VP.bad : VP.text;
   const inner = (
     <View style={{
-      flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 13, paddingHorizontal: 16,
+      flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 12, paddingHorizontal: 16,
       borderBottomWidth: last ? 0 : 1, borderBottomColor: VP.divider,
     }}>
       <View style={{
@@ -125,9 +126,10 @@ function ToggleRow({ icon, label, on, onChange, last }) {
 }
 
 function GoalStepperRow({ value, onChange }) {
+  /* ★hitSlop 5 추가: 34px 스테퍼가 44px 터치 타깃 미달 — 반복 탭 컨트롤이라 더 치명적이었음. radius 9→8(rSm) */
   const Btn = ({ dis, onPress, name }) => (
-    <Pressable onPress={dis ? undefined : onPress} disabled={dis} style={{
-      width: 34, height: 34, borderRadius: 9, alignItems: 'center', justifyContent: 'center',
+    <Pressable onPress={dis ? undefined : onPress} disabled={dis} hitSlop={5} style={{
+      width: 34, height: 34, borderRadius: 8, alignItems: 'center', justifyContent: 'center',
       backgroundColor: dis ? 'transparent' : VP.surface2, borderWidth: 1.5, borderColor: VP.border,
     }}>
       <Icon name={name} size={16} color={dis ? VP.textMute : VP.text} />
@@ -137,7 +139,7 @@ function GoalStepperRow({ value, onChange }) {
     <RowBase icon="mountain" label="하루 목표">
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
         <Btn dis={value <= 5} onPress={() => onChange(value - 5)} name="chevron-left" />
-        <Text style={{ minWidth: 56, textAlign: 'center', fontSize: 14, fontFamily: ff(800), color: VP.text }}>{value}단어</Text>
+        <Text style={{ minWidth: 56, textAlign: 'center', fontSize: 14, fontFamily: ff(700), color: VP.text }}>{value}단어</Text>
         <Btn dis={value >= 60} onPress={() => onChange(value + 5)} name="chevron-right" />
       </View>
     </RowBase>
@@ -147,7 +149,8 @@ function GoalStepperRow({ value, onChange }) {
 function SettingsGroup({ title, children }) {
   return (
     <View style={{ marginBottom: 18 }}>
-      <Text style={{ fontSize: 12, fontFamily: ff(800), color: VP.textSub, letterSpacing: ls(-0.01, 12), paddingHorizontal: 4, paddingBottom: 8 }}>{title}</Text>
+      {/* ★섹션 라벨 12/800→13/700: 통계·설정·시트의 섹션 헤더가 14/12/11 3종이었음 → 13/700/textSub로 통일 */}
+      <Text style={{ fontSize: 13, fontFamily: ff(700), color: VP.textSub, letterSpacing: ls(-0.01, 13), paddingHorizontal: 4, paddingBottom: 8 }}>{title}</Text>
       <View style={{ backgroundColor: VP.surface, borderRadius: 16, borderWidth: 1, borderColor: VP.divider, overflow: 'hidden' }}>
         {children}
       </View>
@@ -213,17 +216,17 @@ export default function Settings({ state, dispatch, account, onOverlay, onReset 
       </View>
 
       <ScrollView style={{ flex: 1 }} contentContainerStyle={{ paddingHorizontal: 20, paddingTop: 4, paddingBottom: 24 }}>
-        {/* 프로필 */}
-        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 14, backgroundColor: VP.surface, borderRadius: 16, padding: 16, borderWidth: 1, borderColor: VP.divider, marginBottom: 18 }}>
+        {/* 프로필 — ★Pressable로: chevron이 있는데 눌리지 않는 죽은 어포던스였음. 내용(걸음·외운 단어)의 자연스러운 목적지인 통계로 연결 */}
+        <Pressable onPress={() => dispatch({ type: 'GO', screen: 'stats' })} style={{ flexDirection: 'row', alignItems: 'center', gap: 14, backgroundColor: VP.surface, borderRadius: 16, padding: 16, borderWidth: 1, borderColor: VP.divider, marginBottom: 18 }}>
           <View style={{ width: 52, height: 52, borderRadius: 26, backgroundColor: VP.accent, alignItems: 'center', justifyContent: 'center' }}>
             <Text style={{ fontSize: 22, fontFamily: ff(800), color: '#fff' }}>나</Text>
           </View>
           <View style={{ flex: 1, minWidth: 0 }}>
-            <Text style={{ fontSize: 17, fontFamily: ff(800), color: VP.text, letterSpacing: ls(-0.02, 17) }}>나의 단어 여정</Text>
+            <Text style={{ fontSize: 17, fontFamily: ff(700), color: VP.text, letterSpacing: ls(-0.02, 17) }}>나의 단어 여정</Text>
             <Text style={{ fontSize: 13, color: VP.textSub, marginTop: 2 }}>{currentCheck}걸음째 체크 중 · 외운 단어 {learned}개</Text>
           </View>
           <Icon name="chevron-right" size={18} color={VP.textMute} />
-        </View>
+        </Pressable>
 
         <SettingsGroup title="계정">
           {account && account.user ? (
@@ -267,9 +270,14 @@ export default function Settings({ state, dispatch, account, onOverlay, onReset 
         ) : null}
 
         <SettingsGroup title="화면">
-          <ToggleRow icon="star" label="다크 모드" on={s.dark} onChange={(v) => set('dark', v)} />
-          <NavRow icon="letters" label="글자 크기" value={FONT_LABELS[s.fontSize || 'normal']} last
-            onPress={() => { const o = ['small', 'normal', 'large']; set('fontSize', o[(o.indexOf(s.fontSize || 'normal') + 1) % 3]); }} />
+          {/* ★star→moon: 별은 즐겨찾기와 의미 충돌 — 다크모드 관례(달)로 */}
+          <ToggleRow icon="moon" label="다크 모드" on={s.dark} onChange={(v) => set('dark', v)} />
+          {/* ★chevron(하위 화면 암시)→rotate: 실제 동작은 탭마다 값 순환이라 어포던스가 거짓이었음 */}
+          <RowBase icon="letters" label="글자 크기" last
+            onPress={() => { const o = ['small', 'normal', 'large']; set('fontSize', o[(o.indexOf(s.fontSize || 'normal') + 1) % 3]); }}>
+            <Text style={{ fontSize: 14, color: VP.textSub, fontFamily: ff(600) }}>{FONT_LABELS[s.fontSize || 'normal']}</Text>
+            <Icon name="rotate" size={14} color={VP.textMute} />
+          </RowBase>
         </SettingsGroup>
 
         <SettingsGroup title="데이터">
@@ -278,7 +286,7 @@ export default function Settings({ state, dispatch, account, onOverlay, onReset 
         </SettingsGroup>
 
         <SettingsGroup title="정보">
-          <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: 14, paddingHorizontal: 16 }}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: 12, paddingHorizontal: 16 }}>
             <Text style={{ fontSize: 15, fontFamily: ff(600), color: VP.textSub }}>버전</Text>
             <Text style={{ fontSize: 13, fontFamily: ff(600), color: VP.textMute }}>1.1.1</Text>
           </View>

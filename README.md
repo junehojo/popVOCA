@@ -15,6 +15,174 @@
 
 ---
 
+> ## 🧪 이 브랜치는 `llmbased` 입니다
+>
+> 학습과학에서 검증된 메커니즘(인출 연습 · 간격 반복 · 자기효능감 · 맥락 학습)과
+> LLM 기반 콘텐츠 생성을 popVOCA의 학습 루프에 반영한 실험 브랜치입니다.
+> `main`(원래 버전)과 무엇이 다른지는 바로 아래 [**main과 달라진 점**](#-main과-달라진-점-llmbased-브랜치) 섹션에 정리돼 있습니다.
+> 그 아래부터는 원래 README가 그대로 이어집니다.
+
+## 🔬 main과 달라진 점 (llmbased 브랜치)
+
+### 왜 바꿨나 — 설계 원리
+
+이 브랜치의 변경은 언어 학습·기억 연구에서 오래 검증된 원리들에 근거합니다.
+
+| 학습과학 원리 | 요지 | 반영한 기능 |
+|--------------|------|------------|
+| 인출 연습 (testing effect) | 틀린 것을 다시 꺼내 보는 시도 자체가 기억을 강화한다 | ① 오답 재도전 루프 |
+| 간격 반복 + 다양한 조합 (varied practice) | 복습은 급한 것 우선 + 매번 조합이 달라야 오래 남는다 | ② 가중 복습 + ★연동 |
+| 자기효능감 (self-efficacy) | "나 늘고 있다"는 감각이 장기 학습 지속의 최강 예측변수 | ③ 자기효능감 통계 |
+| 습관 설계 | 리마인더는 사용자의 실제 학습 시간대·상태에 맞아야 효과 | ④ 리마인더 개선 |
+| 맥락 학습 (situated learning) | 내 분야의 진짜 문장으로 배우면 동기·전이가 훨씬 좋다 | ⑤ 도메인 예문 팩 |
+| 사용 기반 학습 (usage-based) | 내가 실제로 마주친 단어가 최고의 학습 재료다 | ⑥ 내 단어 수집 |
+
+LLM 생성 콘텐츠는 무검증으로 쓰면 불량률이 높기 때문에, **생성 → 자동 평가 → 근거 기반 재생성 → 탈락** 검증 파이프라인을 거친 것만 사용합니다 (⑤의 품질 파이프라인).
+
+---
+
+### ① 퀴즈 오답 재도전 루프 (mastery loop)
+
+**main**: 퀴즈 20문항을 한 번씩 풀면 바로 결과 화면. 틀린 문항은 그대로 지나감.
+**llmbased**: 1라운드가 끝나면 **틀린 문항만 다시 출제**되고, 전부 맞혀야 결과로 넘어갑니다.
+
+- 재도전에서 또 틀리면 2칸 뒤로 재삽입 (플래시카드 2R 드릴과 동일한 큐 방식)
+- **점수·SRS 박스·학습기록은 첫 시도 기준으로만 반영** — 재도전은 학습용이지 점수용이 아니라서 진도 데이터가 오염되지 않습니다
+- 재도전은 그 단어의 손검수 4지선다로 재확인 (타일/스펠링 랜덤 재구성으로 인한 난이도 튐 방지)
+- 재도전 완주 시 결과 화면에 초록 배지: **"틀렸던 N개, 다시 풀어 전부 해결!"**
+- 상단바에 `다시 · 남은 N` 표시, 진행바는 재도전 소진율
+
+| 변경 파일 | 내용 |
+|-----------|------|
+| `App.js` | `quizRound/quizRetry/quizRetryInitial/quizRetryLast` 상태 추가, `QUIZ_ANSWER`·`QUIZ_NEXT`에 2R 분기, 세션 저장 키 확장 |
+| `Quiz.js` | `QuizScreen`이 2R일 때 `quizRetry[0]` 출제 + `right` 라벨, `QuizView`에 `right` prop |
+| `Result.js` | 재도전 완주 배지 |
+
+### ② 복습 선발 가중 샘플링 + 즐겨찾기★ 연동
+
+**main**: 복습 대상은 "박스 낮은 순" 정렬 상위 20개. 즐겨찾기는 학습 알고리즘과 무관한 단순 목록.
+**llmbased**: 우선순위 가중 확률 샘플링으로 교체 — 복습 후보마다
+`헷갈림(박스↓) × 밀린 정도(overdue) × 즐겨찾기(1.6배) × 랜덤 지터(0.8~1.2)` 점수로 뽑습니다.
+
+- **★찍은 단어가 실제로 더 자주 복습에 나옵니다** — 즐겨찾기가 처음으로 학습 루프에 연결됨
+- 랜덤 지터 덕에 매 세션 조합이 달라져 같은 단어만 반복되지 않음 (varied practice)
+- 전원 선발되는 경우(후보 ≤ 20)와 개수 집계용 호출은 기존과 동일하게 동작 (호환성 유지)
+
+| 변경 파일 | 내용 |
+|-----------|------|
+| `data.js` | `dueReviewIds(boxes, clock, exclude, limit, favorites)` 가중 샘플링, `buildSession`에 favorites 전달 |
+| `App.js` | `START_CARD`·`START_DUE_REVIEW`가 `state.favorites` 전달 |
+
+### ③ 자기효능감 통계 — "다시 만나 이긴 단어"
+
+**main**: 통계는 정답률·누계 중심 (외운 단어, 평균 정답률, 주간 차트…).
+**llmbased**: **성장 서사** 지표를 추가했습니다.
+
+- 퀴즈 1라운드 답변마다 단어별 `{시도, 정답, 첫시도오답, 최근정답}` + 노출 차수별 정답률 `[정답,전체]`를 경량 집계
+- 통계 화면 신규 카드 **"다시 만나 이긴 단어"**:
+  - 처음엔 틀렸지만 지금은 맞히는 단어 수
+  - 재노출 정답률 곡선 (첫 만남 / 두 번째 / 세 번째+) — 다시 만날수록 오르는 내 정답률을 눈으로 확인
+  - 표본 5개 미만 구간은 `—` 처리 (노이즈 방지)
+
+| 변경 파일 | 내용 |
+|-----------|------|
+| `App.js` | `wordStats`·`expoStats` 상태 + `QUIZ_ANSWER` 집계, persistKeys 추가(클라우드 동기화 포함) |
+| `Stats.js` | 신규 SectionCard + 곡선 타일 3개 |
+
+### ④ 리마인더 세그먼트화 + 시간 설정
+
+**main**: 매일 저녁 8시 고정 1건, 문구는 헷갈리는 단어 수 기준.
+**llmbased**:
+
+- **알림 시간 설정** — 설정 > 알림 시간 (저녁 7/8/9/10시 순환, 기본 8시 유지)
+- 문구 우선순위 변경: **밀린 복습(due) N개** → 헷갈리는 단어 N개 → 스트릭 (할 일이 구체적일수록 앞으로)
+- **3일 비활성 원샷 알림** 추가 — 앱을 열 때마다 전체 재예약되므로, 실제로는 3일 연속 안 열었을 때만 "3일 쉬었어요 — 1분 퀴즈로 가볍게 복귀해요"가 도착
+
+| 변경 파일 | 내용 |
+|-----------|------|
+| `notifications.js` | `hour`·`dueCount` 파라미터, 3일 원샷 예약 |
+| `Settings.js` | 알림 시간 행 (rotate 순환 패턴) |
+| `App.js` | 알림 이펙트에 due 개수·시간 전달 |
+
+### ⑤ 도메인 예문 팩 — "내 분야 문장으로 배우기"
+
+**main**: 단어당 예문 1개 고정 (교과서 톤).
+**llmbased**: 설정 > **예문 도메인**에서 분야(개발·IT / 의학·바이오 / 비즈니스 / 시사·뉴스 / 학술·논문)를 고르면 **예문과 빈칸 퀴즈 문장이 그 분야 문장으로 바뀝니다.**
+
+핵심 설계 — 품질 리스크 최소화:
+- **손검수 quiz_bank(보기·정답·오답)는 동결 그대로** — 바뀌는 건 예문 문장뿐
+- 생성 파이프라인에 검증 루프 내장: 생성 → 평가(**answerability**: 동결 오답 3개를 넣고 빈칸에 정답만 유일하게 들어맞는가 / **proficiency**: 너무 쉽지 않은가) → 근거 기반 재생성(≤2회) → 탈락은 `rejected`로 기록
+- 탈락·미생성 단어는 기본 예문 사용, 팩은 AsyncStorage 캐시 — **오프라인·미배포 상태에서도 완전 정상 동작**
+- 개인 데이터 기반 학습의 흔한 부작용(일 관련 자료 복습 = 퇴근 후 스트레스)을 구조적으로 회피 — 업무 데이터가 아니라 사용자가 *고른* 관심 분야
+
+| 신규/변경 | 내용 |
+|-----------|------|
+| `personal.js` (신규) | `DOMAINS`, `loadDomainPack`(캐시→원격), `enrichMyWords` |
+| `data.js` | `setDomainPack`·`exampleOf` 오버라이드·`exampleKorOf` 헬퍼 |
+| `Flashcard.js` `WordDetail.js` `Quiz.js` | 예문 해석 읽기를 `exampleKorOf()`로 통일 |
+| `Settings.js` | 예문 도메인 행 + DomainSheet(칩 6개) |
+| Supabase `vocapop_domain_bank` (신규 테이블) | 도메인×단어 예문, RLS 공개 읽기 / 쓰기는 service_role만 |
+| Edge Function `generate-domain-pack` (배포됨) | 생성·평가·재생성 파이프라인 (Claude API, 기본 `claude-opus-4-8`) |
+| `scripts/generate-domain-pack.js` (신규) | 배치 러너 — quiz_bank에서 동결 오답 추출해 12개씩 생성 요청 |
+
+### ⑥ 내 단어 수집 — 공유 시트로 단어장 확장 (Android)
+
+**main**: 학습 대상은 커리큘럼 2,640단어 고정.
+**llmbased**: 다른 앱(브라우저·유튜브·카톡…)에서 모르는 단어를 **공유 → popVOCA** 하거나 **텍스트 선택 툴바에서 popVOCA**를 누르면:
+
+- 커리큘럼에 있는 단어 → **자동 즐겨찾기★** (②의 가중치로 복습에 더 자주 등장) + 단어장으로 이동
+- 미등재 단어 → 단어장 **"내 단어"** 필터에 담기고, `lookup-word` Edge Function이 뜻·품사·발음·예문을 비동기 생성해 채움 (실패해도 목록에 남고 "뜻 준비 중…" 표시)
+- 미등재 단어 행은 스와이프·★ 비활성 — 숫자 id 기반 SRS/즐겨찾기 오염 방지
+
+| 신규/변경 | 내용 |
+|-----------|------|
+| `AndroidManifest.xml` | `ACTION_SEND`(text/plain) + `ACTION_PROCESS_TEXT` 인텐트 필터 |
+| `MainActivity.kt` | 공유 텍스트를 SharedPreferences에 보관 (`stashSharedText`) |
+| `OverlayModule.kt` / `index.ts` | `pullSharedText()` 브리지 — JS가 포그라운드 진입 시 1회성 수거 |
+| `App.js` | `RECEIVE_SHARED`(정규화·굴절 복원·매칭), `MYWORD_UPDATE/REMOVE`, `myWords` 상태(동기화 포함) |
+| `Wordbook.js` | "내 단어 N" 필터 칩, 커스텀 행 렌더, 전용 빈 상태 |
+| `WordDetail.js` | `hideFav` prop (커스텀 단어) |
+| Edge Function `lookup-word` (배포됨) | 사전형 스키마 — vocab_merged와 같은 필드로 반환 |
+
+---
+
+### 데이터 모델 변화 (동기화 주의)
+
+| 항목 | 내용 |
+|------|------|
+| 새 영속 상태 | `wordStats`, `expoStats`, `myWords` — AsyncStorage + Supabase blob 동기화에 포함 |
+| 새 설정 키 | `settings.domain`(예문 도메인), `settings.notiHour`(알림 시간) |
+| 새 세션 키 | `quizRound`, `quizRetry`, `quizRetryInitial` — 재도전 중 앱을 꺼도 이어하기 복원 |
+| 하위 호환 | 전부 additive — main에서 만든 저장 데이터를 그대로 읽음. llmbased에서 main으로 되돌아가도 새 키는 무시될 뿐 깨지지 않음 |
+
+### 활성화가 필요한 것 (LLM 기능)
+
+앱은 키 없이도 전부 동작합니다(기본 예문·"뜻 준비 중" 표시). 생성 기능을 켜려면:
+
+```bash
+# 1) Anthropic API 키 등록 (한 번만)
+supabase secrets set ANTHROPIC_API_KEY=sk-ant-... --project-ref tlighukhkccuwmmvfuoq
+
+# 2) 도메인 예문 팩 생성 (예: 개발 도메인, 1~100번 단어 시범)
+SUPABASE_URL=https://tlighukhkccuwmmvfuoq.supabase.co \
+SUPABASE_SERVICE_ROLE_KEY=... \
+node vocapop-app/scripts/generate-domain-pack.js --domain dev --to 100
+```
+
+### 검증 상태
+
+| 항목 | 상태 |
+|------|------|
+| 오답 재도전 루프 (1R 7오답 → 2R 완주 → 배지) | ✅ 웹 프리뷰 자동화로 실주행 검증 |
+| 통계 신규 카드 · 설정 신규 행 · 도메인 시트 | ✅ 웹 프리뷰 육안 검증 |
+| Edge Function 배포·가드 (anon 차단, 키 미설정 안내) | ✅ curl 검증 |
+| 공유 시트/텍스트 선택 (Kotlin) | ⚠️ 코드 완성 — 실기기 `npx expo run:android` 재빌드 검증 필요 |
+| 도메인 팩 실생성 | ⚠️ `ANTHROPIC_API_KEY` 설정 후 러너 실행 필요 |
+
+---
+
+*아래는 원래 README (main과 동일) 입니다.*
+
 ## 소개
 
 **popVOCA** (`com.vocapop.app`)는 토플 필수 단어 **2,640개**를 계단 오르기 은유로 학습하는 모바일 앱입니다. 20단어가 한 "걸음"이 되고, 카드를 다 훑으면 다음 걸음이 열립니다. 복습해야 할 단어는 박스형 SRS로 카드에 자동으로 섞여 나옵니다.

@@ -1,5 +1,6 @@
 package com.vocapop.app
 
+import android.content.Intent
 import android.os.Build
 import android.os.Bundle
 
@@ -17,6 +18,26 @@ class MainActivity : ReactActivity() {
     // This is required for expo-splash-screen.
     setTheme(R.style.AppTheme);
     super.onCreate(null)
+    stashSharedText(intent)
+  }
+
+  override fun onNewIntent(intent: Intent?) {
+    super.onNewIntent(intent)
+    stashSharedText(intent)
+  }
+
+  /** ★내 단어 수집(2-3) — 공유 시트(ACTION_SEND)·텍스트 선택 툴바(ACTION_PROCESS_TEXT)로
+   *  들어온 텍스트를 SharedPreferences에 보관. JS(App.js)가 포그라운드 진입 시 pullSharedText로 수거한다.
+   *  (launchMode=singleTask라 재공유는 onNewIntent로 들어옴) */
+  private fun stashSharedText(intent: Intent?) {
+    if (intent == null) return
+    val text = when (intent.action) {
+      Intent.ACTION_SEND -> intent.getStringExtra(Intent.EXTRA_TEXT)
+      Intent.ACTION_PROCESS_TEXT -> intent.getCharSequenceExtra(Intent.EXTRA_PROCESS_TEXT)?.toString()
+      else -> null
+    } ?: return
+    if (text.isBlank()) return
+    getSharedPreferences("popvoca_shared", MODE_PRIVATE).edit().putString("pending", text.trim()).apply()
   }
 
   /**

@@ -5,7 +5,8 @@ import { useFonts } from 'expo-font';
 import * as NavigationBar from 'expo-navigation-bar';
 import { FONT_ASSETS, VP, setTheme, setFontScale } from './theme';
 import './applyFontScale';   // 모든 Text fontSize에 글자크기 배율 적용(Text.render 패치)
-import { TOTAL, BY_ID, BY_WORD, wordsForStage, boxAfterCard, boxAfterQuiz, buildSession, startedIds, shuffle, confusingIds, dueReviewIds, lockPool } from './data';
+import { TOTAL, BY_ID, BY_WORD, wordsForStage, boxAfterCard, boxAfterQuiz, buildSession, startedIds, shuffle, confusingIds, dueReviewIds, lockPool, setDomainPack } from './data';
+import { loadDomainPack, enrichMyWords } from './personal';
 import { scheduleReviewReminder } from './notifications';
 import { setSfxEnabled, playSfx, hOk, hBad, warmTTS } from './ui';
 
@@ -83,13 +84,18 @@ const initial = {
   reviewReturn: 'vocab',     // 복습 전용 세션 끝나고 돌아갈 화면 (vocab=헷갈리는 덱 / home=오늘의 복습)
   // 퀴즈 진행 (quizQueue = 출제 대상 id, quizReturn = 끝나고 돌아갈 화면)
   quizIdx: 0, quizResults: {}, quizQueue: [], quizReturn: 'home',
+  // ★ 오답 재도전 라운드(mastery loop) — quizRound 2 = 1R에서 틀린 문항을 다 맞힐 때까지
+  quizRound: 1, quizRetry: [], quizRetryInitial: 0, quizRetryLast: null,
+  // ★ 자기효능감 통계 — 단어별 {a:시도,c:정답,fw:첫시도오답,lc:최근정답}, 노출차수별 정답률 [정답,전체]
+  wordStats: {}, expoStats: { e1: [0, 0], e2: [0, 0], e3: [0, 0] },
+  myWords: [],               // ★ 공유 시트로 수집한 단어 [{word, id|null, korean?, at}] — id=커리큘럼 매칭
   _loaded: false,
 };
-const persistKeys = ['checkedCount', 'favorites', 'points', 'streak', 'todayLearned', 'dailyGoal', 'dailyLog', 'stageLog', 'settings', 'onboarded', 'wbTutorialSeen', 'boxes', 'sessionNo', 'overlayStage', 'overlayIdx'];
+const persistKeys = ['checkedCount', 'favorites', 'points', 'streak', 'todayLearned', 'dailyGoal', 'dailyLog', 'stageLog', 'settings', 'onboarded', 'wbTutorialSeen', 'boxes', 'sessionNo', 'overlayStage', 'overlayIdx', 'wordStats', 'expoStats', 'myWords'];
 // 진행 중이던 학습 세션 — 로컬에만 저장(클라우드 동기화 X). 앱을 닫았다 켜도 '이어하기'로 복원돼 진도가 안 날아감.
 const sessionKeys = ['screen', 'pausedScreen', 'activeStage', 'reviewMode', 'reviewReturn',
   'cardRound', 'cardIdx', 'cardSession', 'cardQueue', 'cardResults', 'cardR2Initial',
-  'quizIdx', 'quizResults', 'quizQueue', 'quizReturn'];
+  'quizIdx', 'quizResults', 'quizQueue', 'quizReturn', 'quizRound', 'quizRetry', 'quizRetryInitial'];
 const FLOW_SCREENS = ['card', 'preview', 'cardR1End', 'quiz'];   // 학습 진행 화면(이어하기 대상)
 const FONT_SCALE = { small: 0.9, normal: 1, large: 1.12 };   // 글자 크기 설정 배율
 const addUniq = (a, n) => a.includes(n) ? a : [...a, n];
@@ -151,14 +157,14 @@ function reducer(state, a) {
       const dailyLog = { ...(state.dailyLog || {}), [t]: ((state.dailyLog && state.dailyLog[t]) || 0) + applied };
       return { ...state, boxes, dailyLog, todayLearned: dailyLog[t], streak: computeStreak(dailyLog) };
     }
-    case 'START_DUE_REVIEW': {   // 홈 '오늘의 복습' — 새 단어 없이 due 복습만 (≤20, 낮은 박스 우선)
-      const ids = dueReviewIds(state.boxes, (state.sessionNo || 0) + 1, [], 20);
+    case 'START_DUE_REVIEW': {   // 홈 '오늘의 복습' — 새 단어 없이 due 복습만 (≤20, ★가중 샘플링)
+      const ids = dueReviewIds(state.boxes, (state.sessionNo || 0) + 1, [], 20, state.favorites);
       if (ids.length === 0) return state;
       const cardSession = shuffle(ids).map(id => ({ id, review: true }));
       return { ...state, screen: 'card', reviewMode: true, reviewReturn: 'home', cardRound: 1, cardIdx: 0, cardSession, cardQueue: [], cardResults: {}, cardHistory: [], cardR2Initial: 0, pausedScreen: null };
     }
-    case 'START_CARD': {   // 세션 = 새 단어 20 + due 복습 ≤20 (랜덤 셔플). 미리보기부터.
-      const cardSession = buildSession(a.stage, state.boxes, state.sessionNo);
+    case 'START_CARD': {   // 세션 = 새 단어 20 + due 복습 ≤20 (★가중 샘플링, 랜덤 셔플). 미리보기부터.
+      const cardSession = buildSession(a.stage, state.boxes, state.sessionNo, state.favorites);
       return { ...state, screen: 'preview', activeStage: a.stage, cardRound: 1, cardIdx: 0, cardSession, cardQueue: [], cardResults: {}, cardHistory: [], reviewMode: false, pausedScreen: null };
     }
     case 'START_CARD_R2':   // 1라운드 끝 → 2라운드(몰랐던 것 반복)
@@ -183,7 +189,7 @@ function reducer(state, a) {
     case 'START_QUIZ': {
       // 출제 = 그 걸음(세션)의 20단어 전부(셔플). 각 단어는 자기 동결 문항으로 출제.
       const queue = shuffle(wordsForStage(a.stage).map(w => w.id));
-      return { ...state, screen: 'quiz', activeStage: a.stage, quizIdx: 0, quizResults: {}, quizQueue: queue, quizReturn: 'home', pausedScreen: null };
+      return { ...state, screen: 'quiz', activeStage: a.stage, quizIdx: 0, quizResults: {}, quizQueue: queue, quizReturn: 'home', quizRound: 1, quizRetry: [], quizRetryInitial: 0, quizRetryLast: null, pausedScreen: null };
     }
     case 'START_CONFUSING_REVIEW': {   // 단어장 '헷갈리는 단어' → 플래시카드 복습(박스 낮은 20개, 틀리면 박스1로 세션 합류)
       const ids = confusingIds(state.boxes).slice(0, 20);
@@ -194,7 +200,7 @@ function reducer(state, a) {
     case 'START_CONFUSING_QUIZ': {   // 헷갈리는 단어 테스트 — 박스 낮은 20개, 동결 문항 재사용. 끝나면 단어장 복귀.
       const queue = confusingIds(state.boxes).slice(0, 20);
       if (queue.length === 0) return state;
-      return { ...state, screen: 'quiz', quizIdx: 0, quizResults: {}, quizQueue: queue, quizReturn: 'vocab', pausedScreen: null };
+      return { ...state, screen: 'quiz', quizIdx: 0, quizResults: {}, quizQueue: queue, quizReturn: 'vocab', quizRound: 1, quizRetry: [], quizRetryInitial: 0, quizRetryLast: null, pausedScreen: null };
     }
     case 'PAUSE':           // 플로우 중 뒤로 → 홈, 이어하기용으로 화면 기억
       return { ...state, pausedScreen: state.screen, screen: 'home' };
@@ -240,27 +246,78 @@ function reducer(state, a) {
       const oc = a.outcome || (a.correct ? 'correct' : 'wrong');
       const gotWord = oc === 'correct' || oc === 'hintCorrect';
       answerFx(gotWord);
+      // ★ 재도전 라운드(2R): 점수·박스·기록은 1R 첫 시도에서 이미 확정 — 여기선 정오만 기억해
+      //   QUIZ_NEXT가 큐를 조작한다 (카드 2R 드릴과 동일 원칙 → SRS 오염 없음)
+      if (state.quizRound === 2) return { ...state, quizRetryLast: gotWord ? 'o' : 'x' };
       const quizResults = { ...state.quizResults, [a.id]: gotWord ? 'o' : 'x' };
       const points = oc === 'correct' ? state.points + 5 : state.points;   // 깨끗한 정답만 +5
       const nb = boxAfterQuiz(state.boxes[a.id], slot, oc, state.sessionNo + 1);
       const boxes = nb ? { ...state.boxes, [a.id]: nb } : state.boxes;
-      return { ...state, quizResults, points, boxes };
+      // ★ 자기효능감 통계 — 노출 차수별 정답률과 '첫 오답 → 최근 정답' 전환을 경량 집계.
+      //   통계 화면의 "다시 만나 이긴 단어" · 재노출 정답률 곡선의 원천 데이터.
+      const pw = (state.wordStats || {})[a.id] || { a: 0, c: 0, fw: 0, lc: 0 };
+      const wordStats = { ...(state.wordStats || {}), [a.id]: { a: pw.a + 1, c: pw.c + (gotWord ? 1 : 0), fw: pw.a === 0 ? (gotWord ? 0 : 1) : pw.fw, lc: gotWord ? 1 : 0 } };
+      const es = { e1: [0, 0], e2: [0, 0], e3: [0, 0], ...(state.expoStats || {}) };
+      const bk = pw.a === 0 ? 'e1' : pw.a === 1 ? 'e2' : 'e3';
+      const expoStats = { ...es, [bk]: [es[bk][0] + (gotWord ? 1 : 0), es[bk][1] + 1] };
+      return { ...state, quizResults, points, boxes, wordStats, expoStats };
     }
     case 'QUIZ_NEXT': {
+      // ★ 2R(오답 재도전): 맞히면 큐에서 빠지고 또 틀리면 2칸 뒤 재삽입 — 전부 맞혀야 결과로.
+      //   근거: 문항 재노출 자체가 기억을 강화한다는 인출 연습(testing effect) 연구
+      if (state.quizRound === 2) {
+        const q = state.quizRetry || [];
+        if (q.length === 0) return { ...state, screen: 'result' };
+        if (state.quizRetryLast === 'o') {
+          const nq = q.slice(1);
+          if (nq.length === 0) { playSfx('complete'); hOk(); return { ...state, quizRetry: nq, quizRetryLast: null, screen: 'result' }; }
+          return { ...state, quizRetry: nq, quizRetryLast: null };
+        }
+        const rest = q.slice(1);
+        const at = Math.min(2, rest.length);
+        return { ...state, quizRetry: [...rest.slice(0, at), q[0], ...rest.slice(at)], quizRetryLast: null };
+      }
       const next = state.quizIdx + 1;
       if (next >= (state.quizQueue ? state.quizQueue.length : 0)) {
-        // 걸음 퀴즈 완료 → 학습 기록(stageLog)에 정답률과 함께 기록 (헷갈리는 테스트는 걸음 단위가 아니라 제외)
+        // 1R 종료 — 걸음 퀴즈 기록(stageLog)은 첫 시도 기준으로 여기서 확정 (헷갈리는 테스트는 제외)
+        let out = state;
         if (state.quizReturn !== 'vocab' && state.quizQueue && state.quizQueue.length) {
-          playSfx('complete'); hOk();
           const right = Object.values(state.quizResults).filter(r => r === 'o').length;
           const acc = Math.round((right / state.quizQueue.length) * 100);
           const entry = { stage: state.activeStage, date: todayLabel(), acc, words: state.quizQueue.length, ts: todayKey() };
-          return { ...state, stageLog: [...(state.stageLog || []), entry], screen: 'result' };
+          out = { ...state, stageLog: [...(state.stageLog || []), entry] };
         }
-        return { ...state, screen: 'result' };
+        // ★ 틀린 문항이 있으면 재도전 라운드로 (없으면 바로 결과)
+        const retry = (state.quizQueue || []).filter(id => state.quizResults[id] === 'x');
+        if (retry.length > 0) return { ...out, quizRound: 2, quizRetry: shuffle(retry), quizRetryInitial: retry.length, quizRetryLast: null };
+        playSfx('complete'); hOk();
+        return { ...out, screen: 'result' };
       }
       return { ...state, quizIdx: next };
     }
+    case 'RECEIVE_SHARED': {
+      // ★ 공유 시트/텍스트 선택으로 들어온 단어 수집.
+      //   커리큘럼(2,640) 매칭 단어는 즐겨찾기★로 학습 루프에 바로 합류, 미등재 단어는 '내 단어'에 담고
+      //   뜻은 Edge Function(lookup-word)이 비동기로 채움 (실패해도 목록엔 남음).
+      const raw = String(a.text || '').trim();
+      const token = ((raw.match(/[A-Za-z][A-Za-z'’-]*/) || [''])[0] || '').toLowerCase();
+      if (!token || token.length < 2) return state;
+      const hit = BY_WORD[token]
+        || BY_WORD[token.replace(/ies$/, 'y')] || BY_WORD[token.replace(/(es|s)$/, '')]
+        || BY_WORD[token.replace(/(ing|ed)$/, '')] || BY_WORD[token.replace(/(ing|ed)$/, 'e')] || null;   // 간단 굴절 복원
+      const entry = { word: hit ? hit.word : token, id: hit ? hit.id : null, at: Date.now() };
+      const myWords = [entry, ...(state.myWords || []).filter(m => m.word !== entry.word)].slice(0, 200);
+      const favorites = hit ? addUniq(state.favorites, hit.id) : state.favorites;
+      return { ...state, myWords, favorites, screen: 'vocab', vocabView: 'mine' };
+    }
+    case 'MYWORD_UPDATE': {   // lookup-word 결과(뜻·예문) 병합 — word 키 기준
+      const myWords = (state.myWords || []).map(m => m.word === a.word ? { ...m, ...a.fields } : m);
+      return { ...state, myWords };
+    }
+    case 'MYWORD_REMOVE':
+      return { ...state, myWords: (state.myWords || []).filter(m => m.word !== a.word) };
+    case 'DOMAIN_PACK':   // 도메인 예문 팩 로드 완료 — 렌더 갱신용 카운터(팩 자체는 data.js 모듈에 주입됨)
+      return { ...state, domainPackN: a.n || 0 };
     case 'FINISH_ONBOARDING':
       return { ...state, onboarded: true };
     case 'SET_GOAL':
@@ -338,17 +395,45 @@ export default function App() {
     Overlay.setLockPool(lockPool(state.boxes, state.favorites, s.lockScope || 'confusing'));
     Overlay.setLockConfig(!!s.lockEnabled, s.lockMode || 'quiz', s.lockInterval == null ? 30 : s.lockInterval, !!s.dark);
   }, [state._loaded, state.settings && state.settings.lockEnabled, state.settings && state.settings.lockMode, state.settings && state.settings.lockInterval, state.settings && state.settings.lockScope, state.settings && state.settings.dark, state.boxes, state.favorites]);
-  // 복습 알림(로컬) — 매일 저녁 8시 1건 유지. 오늘 학습했으면 내일로 미룸. 내용 = 헷갈리는 단어 수.
+  // 복습 알림(로컬) — 설정 시간(기본 저녁 8시)에 1건 유지. 오늘 학습했으면 내일로 미룸.
+  // ★ 상태 기반 세그먼트: 문구는 due 복습 수 우선, 별도로 '3일 비활성' 원샷도 함께 예약 (notifications.js)
   useEffect(() => {
     if (!state._loaded) return;
     const s = state.settings || {};
     scheduleReviewReminder({
       enabled: s.noti !== false,
+      hour: s.notiHour || 20,
       studiedToday: ((state.dailyLog && state.dailyLog[todayKey()]) || 0) > 0,
+      dueCount: dueReviewIds(state.boxes, (state.sessionNo || 0) + 1, []).length,
       confusingCount: confusingIds(state.boxes).length,
       streak: state.streak || 0,
     });
-  }, [state._loaded, state.settings && state.settings.noti, state.todayLearned, state.boxes, state.streak]);
+  }, [state._loaded, state.settings && state.settings.noti, state.settings && state.settings.notiHour, state.todayLearned, state.boxes, state.streak]);
+  // ★ 도메인 예문 팩(2-1) — 설정의 도메인이 바뀌면 캐시→원격 순으로 로드해 data.js에 주입.
+  //   팩이 없으면(테이블 미생성·오프라인) 조용히 기본 예문 유지.
+  useEffect(() => {
+    if (!state._loaded) return;
+    const domain = state.settings && state.settings.domain;
+    let alive = true;
+    loadDomainPack(domain, (pack, n) => { if (!alive) return; setDomainPack(pack); dispatch({ type: 'DOMAIN_PACK', n }); });
+    return () => { alive = false; };
+  }, [state._loaded, state.settings && state.settings.domain]);
+  // ★ 내 단어(2-3) — 공유 시트로 들어온 텍스트를 앱 진입/복귀 시 수거, 미등재 단어 뜻은 비동기 보강
+  useEffect(() => {
+    const pull = () => {
+      try {
+        const t = Overlay.pullSharedText && Overlay.pullSharedText();
+        if (t) dispatch({ type: 'RECEIVE_SHARED', text: t });
+      } catch (e) {}
+    };
+    if (state._loaded) pull();
+    const sub = AppState.addEventListener('change', (st) => { if (st === 'active') pull(); });
+    return () => sub.remove();
+  }, [state._loaded]);
+  useEffect(() => {
+    if (!state._loaded) return;
+    enrichMyWords(state.myWords, (word, fields) => dispatch({ type: 'MYWORD_UPDATE', word, fields }));
+  }, [state._loaded, state.myWords]);
   // 앱이 켜지거나 포그라운드로 돌아올 때: 잠금화면서 답한 결과를 박스에 반영
   useEffect(() => {
     if (!Overlay.isLockSupported()) return;

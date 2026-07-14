@@ -120,6 +120,16 @@ export default function Stats({ state, dispatch }) {
   const recentLog = useMemo(() => [...stageLog].reverse().slice(0, 8), [stageLog]);
   const hasProgress = stageLog.length > 0 || state.checkedCount > 0 || Object.keys(boxes).length > 0 || weekTotal > 0;
 
+  // ★자기효능감 서사 — 자기효능감은 장기 학습 성취의 강력한 예측변수(SLA 연구).
+  //   '정답률'이 아니라 '성장'을 보여준다:
+  //   (1) 다시 만나 이긴 단어 = 첫 시도에 틀렸지만 최근 시도는 맞힌 단어 수
+  //   (2) 재노출 정답률 곡선 = 첫 만남 → 2번째 → 3번째+ 정답률 (인출 연습 효과 가시화)
+  const ws = state.wordStats || {};
+  const redeemedCount = useMemo(() => Object.values(ws).filter(x => x && x.fw === 1 && x.lc === 1).length, [state.wordStats]);
+  const es = { e1: [0, 0], e2: [0, 0], e3: [0, 0], ...(state.expoStats || {}) };
+  const expoPct = (b) => (b && b[1] >= 5 ? Math.round((b[0] / b[1]) * 100) : null);   // 표본 5개 미만이면 숨김(노이즈)
+  const hasExpo = expoPct(es.e1) != null;
+
   return (
     <View style={{ flex: 1, backgroundColor: VP.bg }}>
       {/* 헤더 */}
@@ -167,6 +177,30 @@ export default function Stats({ state, dispatch }) {
           {Object.keys(boxes).length > 0 ? (
             <SectionCard title="외우는 단계" right={`학습 ${Object.keys(boxes).length}단어`}>
               <BoxDist boxes={boxes} />
+            </SectionCard>
+          ) : null}
+
+          {/* ★다시 만나 이긴 단어 — 자기효능감 카드 (퀴즈를 풀어야 쌓임) */}
+          {(redeemedCount > 0 || hasExpo) ? (
+            <SectionCard title="다시 만나 이긴 단어" right={redeemedCount > 0 ? `${redeemedCount}개` : ''}>
+              {redeemedCount > 0 ? (
+                <Text style={{ fontSize: 13, color: VP.textSub, lineHeight: 19 }}>
+                  처음엔 틀렸지만 지금은 맞히는 단어가 <Text style={{ fontFamily: ff(700), color: VP.okDeep }}>{redeemedCount}개</Text> — 다시 만나면 이겨요.
+                </Text>
+              ) : null}
+              {hasExpo ? (
+                <View style={{ flexDirection: 'row', gap: 8, marginTop: redeemedCount > 0 ? 12 : 0 }}>
+                  {[['첫 만남', es.e1], ['두 번째', es.e2], ['세 번째+', es.e3]].map(([label, b], i) => {
+                    const p = expoPct(b);
+                    return (
+                      <View key={label} style={{ flex: 1, alignItems: 'center', paddingVertical: 10, borderRadius: 12, backgroundColor: VP.surface2 }}>
+                        <Text style={{ fontSize: 17, fontFamily: ff(700), color: p == null ? VP.textMute : (i === 2 ? VP.okDeep : VP.text) }}>{p == null ? '—' : `${p}%`}</Text>
+                        <Text style={{ fontSize: 11, color: VP.textSub, fontFamily: ff(600), marginTop: 2 }}>{label}</Text>
+                      </View>
+                    );
+                  })}
+                </View>
+              ) : null}
             </SectionCard>
           ) : null}
 

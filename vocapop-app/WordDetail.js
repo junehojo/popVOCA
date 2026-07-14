@@ -7,7 +7,7 @@ import * as Speech from 'expo-speech';
 import { VP, ff, ls } from './theme';
 import { Icon } from './Icon';
 import { VPButton, SpeakButton } from './ui';
-import { meaningList, exampleOf, WELL_KNOWN_IVL } from './data';
+import { meaningList, exampleOf, exampleKorOf, WELL_KNOWN_IVL } from './data';
 import { UnderlinedKor } from './Quiz';
 
 const SCREEN_H = Dimensions.get('window').height;
@@ -45,7 +45,7 @@ function PulseSpeak({ text }) {
   );
 }
 
-export default function WordDetail({ word, isFav, ivl = 0, onToggleFav, onClose }) {
+export default function WordDetail({ word, isFav, ivl = 0, hideFav, onToggleFav, onClose }) {
   const ty = useRef(new Animated.Value(SCREEN_H)).current;   // 화면 아래에서 시작 → 슬라이드업
   const op = useRef(new Animated.Value(0)).current;
 
@@ -132,16 +132,17 @@ export default function WordDetail({ word, isFav, ivl = 0, onToggleFav, onClose 
                     <Text style={{ flex: 1, fontSize: 15, color: VP.text, lineHeight: 23, fontStyle: 'italic' }}>"{ex}"</Text>
                     <SpeakButton text={ex} size={34} />
                   </View>
-                  {word.exampleKor ? (
+                  {exampleKorOf(word) ? (
                     <View style={{ marginTop: 10, paddingTop: 10, borderTopWidth: 1, borderTopColor: VP.divider }}>
-                      <UnderlinedKor text={word.exampleKor} style={{ fontSize: 13, color: VP.textSub, lineHeight: 20 }} />
+                      <UnderlinedKor text={exampleKorOf(word)} style={{ fontSize: 13, color: VP.textSub, lineHeight: 20 }} />
                     </View>
                   ) : null}
                 </View>
               </View>
             ) : null}
 
-            {/* 즐겨찾기 */}
+            {/* 즐겨찾기 (공유 수집 단어는 숨김 — 즐겨찾기는 커리큘럼 id 기반) */}
+            {hideFav ? null : (
             <View style={{ marginTop: 22 }}>
               <VPButton
                 variant={isFav ? 'accent' : 'soft'}
@@ -150,6 +151,7 @@ export default function WordDetail({ word, isFav, ivl = 0, onToggleFav, onClose 
                 onPress={onToggleFav}
               />
             </View>
+            )}
           </ScrollView>
         </Animated.View>
       </View>

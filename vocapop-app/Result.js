@@ -55,6 +55,9 @@ export function ResultScore({ state, dispatch }) {
   const acc = total ? Math.round((right / total) * 100) : 0;
   const earned = right * 5;   // 실제 적립 포인트(정답당 ⭐+5)와 동일하게 표시
   const title = acc === 100 ? '완벽해요!' : acc >= 80 ? '잘했어요!' : acc >= 60 ? '괜찮아요' : '연습 더 해요';
+  // ★재도전 완주(mastery loop) — 1R에서 틀렸던 문항을 2R에서 전부 맞히고 온 경우.
+  //   점수(acc)는 첫 시도 기준 그대로 두고, "끝내 다 맞혔다"는 성취를 별도 배지로 보상.
+  const redeemed = (state.quizRetryInitial || 0) > 0 && (!state.quizRetry || state.quizRetry.length === 0);
   return (
     <View style={{ flex: 1, backgroundColor: VP.bg }}>
       {/* ★오버라인을 센터 그룹 안으로 — 상단에 고립돼 링과 ~465px 떨어져 떠 있었음. 링+판정+스탯이 한 그룹으로 광학 중앙 */}
@@ -62,6 +65,12 @@ export function ResultScore({ state, dispatch }) {
         <Text style={{ fontSize: 12, color: VP.textMute, fontFamily: ff(700), marginBottom: 2 }}>퀴즈 점검 결과</Text>
         <Donut value={acc} />
         <Text style={{ fontSize: 28, fontFamily: ff(800), color: VP.text, letterSpacing: ls(-0.025, 28) }}>{title}</Text>
+        {redeemed ? (
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 12, paddingVertical: 6, borderRadius: 999, backgroundColor: VP.okSoft, marginTop: -4 }}>
+            <Icon name="check-bold" size={13} color={VP.okDeep} />
+            <Text style={{ fontSize: 13, fontFamily: ff(700), color: VP.okDeep }}>틀렸던 {state.quizRetryInitial}개, 다시 풀어 전부 해결!</Text>
+          </View>
+        ) : null}
         {/* ★'맞춤'(커스텀으로 오독)→'정답', '틀림'→'오답', '획득 ⭐'(유일한 이모지)→star 아이콘+'포인트' */}
         <View style={{ flexDirection: 'row', gap: 8, width: '100%', maxWidth: 360 }}>
           <Stat label="정답" value={right} color={VP.ok} />

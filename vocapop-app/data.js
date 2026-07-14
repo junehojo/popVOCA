@@ -42,7 +42,25 @@ export const meaningList = (w) => {
   if (Array.isArray(w.meanings) && w.meanings.length) return w.meanings.map(m => (typeof m === 'string' ? m : m.meaning)).filter(Boolean);
   return w.korean ? String(w.korean).split(';').map(s => s.trim()).filter(Boolean) : [];
 };
-export const exampleOf = (w) => (w && (w.example || w.exampleBlank)) || '';
+
+/* ───────── 도메인 예문 팩 ─────────
+   ★ 사용자가 고른 관심 도메인(개발/의학/비즈니스…)의 예문으로 기본 예문을 덮어씀.
+   문항 보기(quiz_bank)는 손검수 그대로 두고 "예문/빈칸 문장"만 바꾸므로 정답·오답 품질은 유지된다.
+   팩은 Supabase vocapop_domain_bank에서 받아 App.js가 setDomainPack으로 주입 (없으면 완전 no-op). */
+let _domainPack = {};   // { word_id: { ex, kor } }
+export function setDomainPack(pack) { _domainPack = pack || {}; }
+export const domainExampleOf = (w) => (w && _domainPack[w.id]) || null;
+export const exampleOf = (w) => {
+  const d = domainExampleOf(w);
+  if (d && d.ex) return d.ex;
+  return (w && (w.example || w.exampleBlank)) || '';
+};
+// 예문 한글 해석 — 도메인 팩 우선 (화면들이 w.exampleKor 직접 읽던 것을 이 헬퍼로 통일)
+export const exampleKorOf = (w) => {
+  const d = domainExampleOf(w);
+  if (d && d.ex) return d.kor || '';   // 도메인 예문엔 도메인 해석만 (원본 해석과 섞이면 오답)
+  return (w && w.exampleKor) || '';
+};
 
 // 오답 후보에서 제외할 단어 판정용 ───────────────────────────────
 // (1) 뜻이 겹치는 동의어 → 둘 다 정답이 되는 모호함 방지 (예: inventory/stock, magnificent/superior)
@@ -129,13 +147,31 @@ export function confusingIds(boxes) {
     .filter(id => boxes[id] && boxes[id].ivl < WELL_KNOWN_IVL)
     .sort((a, b) => boxes[a].ivl - boxes[b].ivl);
 }
-// 세션 클록 clock에서 복습 대상 id (낮은 박스=급한 것 우선, 새 단어 제외, limit개까지 / 초과분 이월)
-export function dueReviewIds(boxes, clock, excludeIds, limit) {
+// 세션 클록 clock에서 복습 대상 id (새 단어 제외, limit개까지 / 초과분 이월)
+// ★ 가중 확률 샘플링: 단순 '낮은 박스 순' 정렬 대신 우선순위 가중치로 선발.
+//   가중치 = 헷갈림(박스 낮음)↑ · 밀린 정도(overdue)↑ · 즐겨찾기★ 1.6배 · 랜덤 지터(0.8~1.2).
+//   지터 덕에 매 세션 조합이 달라져 같은 단어만 반복되지 않고(varied practice),
+//   ★단어가 실제로 더 자주 나와 즐겨찾기가 학습 루프에 연결된다.
+export function dueReviewIds(boxes, clock, excludeIds, limit, favorites) {
   const ex = new Set((excludeIds || []).map(Number));
-  return Object.keys(boxes || {}).map(Number)
-    .filter(id => !ex.has(id) && boxes[id] && boxes[id].due <= clock)
-    .sort((a, b) => boxes[a].ivl - boxes[b].ivl)
-    .slice(0, limit);
+  const fav = new Set(favorites || []);
+  const due = Object.keys(boxes || {}).map(Number)
+    .filter(id => !ex.has(id) && boxes[id] && boxes[id].due <= clock);
+  if (limit == null || due.length <= limit) {
+    return due.sort((a, b) => boxes[a].ivl - boxes[b].ivl);   // 전원 선발이면 급한 순 정렬만 (개수 집계용 호출도 이 경로)
+  }
+  const score = (id) => {
+    const b = boxes[id];
+    const wBox = 1 + confusingStrength(b.ivl) * 2;              // 박스1=3.0 ~ 졸업직전=1.0
+    const wOver = 1 + Math.min(3, Math.max(0, clock - b.due)) * 0.25;   // 밀릴수록 +25%/세션 (3세션 상한)
+    const wFav = fav.has(id) ? 1.6 : 1;
+    const jitter = 0.8 + Math.random() * 0.4;
+    return wBox * wOver * wFav * jitter;
+  };
+  return due.map(id => ({ id, s: score(id) }))
+    .sort((a, b) => b.s - a.s)
+    .slice(0, limit)
+    .map(x => x.id);
 }
 // 배열 랜덤 셔플 (Fisher–Yates)
 export function shuffle(arr) {
@@ -165,10 +201,11 @@ export function lockPool(boxes, favorites, scope = 'confusing', limit = 50) {
   ];
 }
 // 세션 카드 = 새 단어 20개 + due 복습 ≤20개, 랜덤 셔플. 각 카드 {id, review:bool}.
-export function buildSession(stage, boxes, sessionNo) {
+// favorites를 넘기면 복습 선발에 ★가중 적용 (dueReviewIds 참조)
+export function buildSession(stage, boxes, sessionNo, favorites) {
   const clock = sessionNo + 1;
   const newIds = wordsForStage(stage).map(w => w.id);
-  const reviewIds = dueReviewIds(boxes, clock, newIds, 20);
+  const reviewIds = dueReviewIds(boxes, clock, newIds, 20, favorites);
   return shuffle([
     ...newIds.map(id => ({ id, review: false })),
     ...reviewIds.map(id => ({ id, review: true })),

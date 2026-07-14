@@ -10,8 +10,12 @@ import { VPButton } from './ui';
 import { TOTAL, wordsForStage, startedIds, confusingIds, WELL_KNOWN_IVL } from './data';
 import * as Overlay from './modules/vocapop-overlay';
 import { ensureNotifPermission, sendTestNotification } from './notifications';
+import { DOMAINS, domainLabel } from './personal';
 
 const FONT_LABELS = { small: '작게', normal: '보통', large: '크게' };
+// 알림 시간 순환 옵션 — 늦은 저녁 학습 패턴을 고려해 밤 10시까지 제공
+const NOTI_HOURS = [19, 20, 21, 22];
+const notiHourLabel = (h) => `저녁 ${h - 12}시`;
 
 /* 잠금학습 설정 시트 옵션들 */
 const LOCK_MODES = [{ v: 'quiz', l: '1탭 퀴즈' }, { v: 'flash', l: '플래시카드' }];
@@ -44,6 +48,28 @@ function ChipGroup({ title, options, value, onSelect }) {
         {options.map(o => <SheetChip key={String(o.v)} on={value === o.v} label={o.l} onPress={() => onSelect(o.v)} />)}
       </View>
     </View>
+  );
+}
+
+/* ★예문 도메인 선택 — 관심 분야를 고르면 예문·빈칸 문장이 그 분야 문장으로 바뀐다.
+   문항 보기(quiz_bank)는 손검수 그대로 — 예문만 교체되므로 정답 품질은 유지. */
+function DomainSheet({ visible, s, set, onClose }) {
+  if (!visible) return null;
+  return (
+    <Modal visible transparent animationType="fade" statusBarTranslucent onRequestClose={onClose}>
+      <Pressable style={{ flex: 1, backgroundColor: 'rgba(8,10,16,0.45)' }} onPress={onClose} />
+      <View style={{ position: 'absolute', left: 0, right: 0, bottom: 0, backgroundColor: VP.bg, borderTopLeftRadius: VP.rSheet, borderTopRightRadius: VP.rSheet, paddingHorizontal: 20, paddingTop: 10, paddingBottom: 24 }}>
+        <View style={{ alignItems: 'center', paddingTop: 4, paddingBottom: 12 }}>
+          <View style={{ width: 40, height: 5, borderRadius: 999, backgroundColor: VP.border }} />
+        </View>
+        <Text style={{ fontSize: 18, fontFamily: ff(700), color: VP.text, letterSpacing: ls(-0.02, 18), marginBottom: 6 }}>예문 도메인</Text>
+        <Text style={{ fontSize: 13, color: VP.textSub, lineHeight: 19, marginBottom: 14 }}>
+          고른 분야의 문장으로 예문과 빈칸 문제가 바뀌어요. 단어와 보기(정답·오답)는 그대로예요.
+        </Text>
+        <ChipGroup title="분야" options={DOMAINS} value={s.domain || null} onSelect={(v) => { set('domain', v); onClose(); }} />
+        <Text style={{ fontSize: 12, color: VP.textMute, lineHeight: 17 }}>아직 준비 중인 분야는 기본 예문이 나와요 · 오프라인에서도 동작</Text>
+      </View>
+    </Modal>
   );
 }
 
@@ -160,6 +186,7 @@ function SettingsGroup({ title, children }) {
 
 export default function Settings({ state, dispatch, account, onOverlay, onReset }) {
   const [lockSheet, setLockSheet] = useState(false);
+  const [domainSheet, setDomainSheet] = useState(false);
   const learned = Object.values(state.boxes || {}).filter(b => b && b.ivl >= WELL_KNOWN_IVL).length;   // 외운(졸업) 단어
   const currentCheck = Math.min(TOTAL, state.checkedCount + 1);
   const s = state.settings || { noti: true, autoPlay: true, sound: true, dark: false };
@@ -249,10 +276,20 @@ export default function Settings({ state, dispatch, account, onOverlay, onReset 
 
         <SettingsGroup title="학습">
           <GoalStepperRow value={state.dailyGoal} onChange={(v) => dispatch({ type: 'SET_GOAL', value: v })} />
+          {/* ★예문 도메인 — "내 분야 문장으로 배우기" 진입점 */}
+          <NavRow icon="book-open" label="예문 도메인" value={domainLabel(s.domain)} onPress={() => setDomainSheet(true)} />
           {showOverlay ? <NavRow icon="pip" label="플로팅 학습 — 다른 앱 위에" onPress={openOverlay} /> : null}
           <ToggleRow icon="speaker" label="발음 자동 재생" on={s.autoPlay} onChange={(v) => set('autoPlay', v)} />
           <ToggleRow icon="party" label="효과음" on={s.sound} onChange={(v) => set('sound', v)} />
-          <ToggleRow icon="lightbulb" label="복습 알림 · 매일 저녁 8시" on={s.noti !== false} onChange={onNotiToggle} last />
+          <ToggleRow icon="lightbulb" label="복습 알림" on={s.noti !== false} onChange={onNotiToggle} last={s.noti === false} />
+          {/* ★알림 시간 설정 — 고정 '저녁 8시' → 사용자가 순환 선택 (글자 크기 행과 같은 rotate 패턴) */}
+          {s.noti !== false ? (
+            <RowBase icon="lightbulb" label="알림 시간" last
+              onPress={() => { const cur = NOTI_HOURS.indexOf(s.notiHour || 20); set('notiHour', NOTI_HOURS[(cur + 1) % NOTI_HOURS.length]); }}>
+              <Text style={{ fontSize: 14, color: VP.textSub, fontFamily: ff(600) }}>{notiHourLabel(s.notiHour || 20)}</Text>
+              <Icon name="rotate" size={14} color={VP.textMute} />
+            </RowBase>
+          ) : null}
         </SettingsGroup>
 
         {Overlay.isLockSupported() ? (
@@ -297,6 +334,7 @@ export default function Settings({ state, dispatch, account, onOverlay, onReset 
       <TabBar active="settings" dispatch={dispatch} />
 
       <LockSheet visible={lockSheet} s={s} set={set} onClose={() => setLockSheet(false)} />
+      <DomainSheet visible={domainSheet} s={s} set={set} onClose={() => setDomainSheet(false)} />
     </View>
   );
 }

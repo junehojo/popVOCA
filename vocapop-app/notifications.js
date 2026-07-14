@@ -30,24 +30,41 @@ export async function ensureNotifPermission() {
   } catch (e) { return false; }
 }
 
-const HOUR = 20;   // 저녁 8시
-
-/** 다음 복습 알림 1건 재예약 (기존 예약 전부 취소 후) */
-export async function scheduleReviewReminder({ enabled, studiedToday, confusingCount, streak }) {
+/** 다음 복습 알림 재예약 (기존 예약 전부 취소 후).
+ *  ★ 상태 기반 세그먼트: ① 매일 리마인더는 due 복습 수를 최우선 문구로(할 일이 구체적),
+ *  ② 별도 '3일 비활성' 원샷을 함께 예약 — 앱을 열 때마다 전체 재예약되므로 3일 안 열었을 때만 발화.
+ *  hour = 설정 가능한 알림 시각 (기본 20시, 설정에서 변경 — 늦은 저녁 학습 패턴 고려). */
+export async function scheduleReviewReminder({ enabled, hour, studiedToday, dueCount, confusingCount, streak }) {
   try {
     await Notifications.cancelAllScheduledNotificationsAsync();
     if (!enabled) return;
     await ensureChannel();
+    const H = hour || 20;
     const now = new Date();
     const t = new Date(now);
-    t.setHours(HOUR, 0, 0, 0);
-    if (studiedToday || t <= now) t.setDate(t.getDate() + 1);   // 오늘 했으면(또는 8시 지났으면) 내일
-    const body = confusingCount > 0
-      ? `헷갈리는 단어 ${confusingCount}개가 기다려요${streak > 0 ? ` · 🔥 ${streak}일 연속 지키기` : ''}`
-      : (streak > 0 ? `오늘 한 걸음 — 🔥 ${streak}일 연속을 지켜요!` : '오늘 한 걸음, 20단어면 충분해요');
+    t.setHours(H, 0, 0, 0);
+    if (studiedToday || t <= now) t.setDate(t.getDate() + 1);   // 오늘 했으면(또는 시각이 지났으면) 내일
+    const body = dueCount > 0
+      ? `밀린 복습 ${dueCount}개가 기다려요${streak > 0 ? ` · 🔥 ${streak}일 연속 지키기` : ''}`
+      : confusingCount > 0
+        ? `헷갈리는 단어 ${confusingCount}개가 기다려요${streak > 0 ? ` · 🔥 ${streak}일 연속 지키기` : ''}`
+        : (streak > 0 ? `오늘 한 걸음 — 🔥 ${streak}일 연속을 지켜요!` : '오늘 한 걸음, 20단어면 충분해요');
     await Notifications.scheduleNotificationAsync({
       content: { title: 'popVOCA 복습 시간', body, sound: false },
       trigger: { date: t, channelId: 'review' },
+    });
+    // 3일 비활성 리마인더 — 데일리와 겹치지 않게 30분 뒤 시각. 앱을 열면 항상 재예약되므로
+    // 실제로는 '3일 연속 안 열었을 때' 한 번만 도착한다.
+    const t3 = new Date(now);
+    t3.setDate(t3.getDate() + 3);
+    t3.setHours(H, 30, 0, 0);
+    await Notifications.scheduleNotificationAsync({
+      content: {
+        title: '3일 쉬었어요',
+        body: confusingCount > 0 ? `1분 퀴즈로 가볍게 복귀해요 — 헷갈리는 단어 ${confusingCount}개` : '1분 퀴즈로 가볍게 복귀해요',
+        sound: false,
+      },
+      trigger: { date: t3, channelId: 'review' },
     });
   } catch (e) {}
 }
@@ -57,7 +74,7 @@ export async function sendTestNotification() {
   try {
     await ensureChannel();
     await Notifications.scheduleNotificationAsync({
-      content: { title: 'popVOCA 알림이 켜졌어요', body: '매일 저녁 8시에 복습을 챙겨드릴게요', sound: false },
+      content: { title: 'popVOCA 알림이 켜졌어요', body: '매일 설정한 시간에 복습을 챙겨드릴게요', sound: false },
       trigger: null,
     });
   } catch (e) {}

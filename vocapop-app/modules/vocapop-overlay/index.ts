@@ -75,6 +75,12 @@ export function pullLockResults(): Array<{ w: string; correct: boolean }> {
   try { return JSON.parse(native.pullLockResults() || '[]'); } catch (e) { return []; }
 }
 
+/** ★내 단어 수집(2-3) — 공유 시트/텍스트 선택으로 들어온 텍스트 수거(1회성). 없으면 '' */
+export function pullSharedText(): string {
+  if (!native || !native.pullSharedText) return '';
+  try { return native.pullSharedText() || ''; } catch (e) { return ''; }
+}
+
 /** 배터리 최적화 제외 요청 (이 앱만 콕 집어) */
 export function requestBatteryExemption(): void {
   if (native && native.requestBatteryExemption) native.requestBatteryExemption();

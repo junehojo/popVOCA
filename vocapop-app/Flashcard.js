@@ -5,7 +5,7 @@ import { View, Text, Pressable, ScrollView, Animated, Easing } from 'react-nativ
 import { VP, ff, ls } from './theme';
 import { Icon } from './Icon';
 import { VPButton, ProtoTopBar, ProtoFooter, SpeakButton, speak, playSfx, hTap } from './ui';
-import { BY_ID, wordsForStage, meaningList, exampleOf } from './data';
+import { BY_ID, wordsForStage, meaningList, exampleOf, exampleKorOf } from './data';
 import { UnderlinedKor } from './Quiz';
 import * as Overlay from './modules/vocapop-overlay';
 
@@ -135,9 +135,9 @@ export function FlashcardScreen({ state, dispatch, onOverlay }) {
             {!!exampleOf(word) && (
               <View style={{ marginTop: 24, paddingHorizontal: 14, paddingVertical: 12, backgroundColor: VP.bg, borderRadius: 12, borderWidth: 1, borderColor: VP.divider }}>
                 <Text style={{ fontSize: 14, color: VP.textSub, fontStyle: 'italic', lineHeight: 21 }}>"{exampleOf(word)}"</Text>
-                {word.exampleKor ? (
+                {exampleKorOf(word) ? (
                   <View style={{ marginTop: 8, paddingTop: 8, borderTopWidth: 1, borderTopColor: VP.divider }}>
-                    <UnderlinedKor text={word.exampleKor} style={{ fontSize: 13, color: VP.textSub, lineHeight: 19 }} />
+                    <UnderlinedKor text={exampleKorOf(word)} style={{ fontSize: 13, color: VP.textSub, lineHeight: 19 }} />
                   </View>
                 ) : null}
               </View>

@@ -139,6 +139,14 @@ class OverlayModule : Module() {
       r
     }
 
+    // ★내 단어 수집(2-3) — MainActivity가 공유 시트/텍스트 선택으로 받아둔 텍스트를 1회성 수거
+    Function("pullSharedText") {
+      val p = ctx.getSharedPreferences("popvoca_shared", Context.MODE_PRIVATE)
+      val t = p.getString("pending", "") ?: ""
+      if (t.isNotEmpty()) p.edit().remove("pending").apply()
+      t
+    }
+
     Function("requestBatteryExemption") {
       try {
         val pm = ctx.getSystemService(Context.POWER_SERVICE) as PowerManager

@@ -6,7 +6,7 @@ import { View, Text, Pressable, Animated, Easing, TextInput, Keyboard } from 're
 import { VP, ff, ls } from './theme';
 import { Icon } from './Icon';
 import { ProtoTopBar, VPButton, SpeakButton, speak } from './ui';
-import { wordsForStage, meaningList, exampleOf, pickOptions, BY_ID, quizMetaFor, stageIdxOf, quizSlotFor } from './data';
+import { wordsForStage, meaningList, exampleOf, exampleKorOf, pickOptions, BY_ID, quizMetaFor, stageIdxOf, quizSlotFor } from './data';
 
 export const QUIZ_CYCLE = ['meaning', 'word', 'blank'];
 
@@ -111,9 +111,9 @@ function FeedbackSheet({ correct, word, type, note, onNext, onHeight }) {
           {note ? <Text style={{ fontSize: 12, color: fg, opacity: 0.7, marginTop: 4 }}>{note}</Text> : null}
         </View>
       </View>
-      {type === 'blank' && word.exampleKor ? (
+      {type === 'blank' && exampleKorOf(word) ? (
         <View style={{ paddingHorizontal: 12, paddingVertical: 12, backgroundColor: VP.bg, opacity: 0.92, borderRadius: 12 }}>
-          <UnderlinedKor text={word.exampleKor} style={{ fontSize: 13, color: fg, lineHeight: 20 }} />
+          <UnderlinedKor text={exampleKorOf(word)} style={{ fontSize: 13, color: fg, lineHeight: 20 }} />
         </View>
       ) : null}
       <VPButton variant={correct ? 'ok' : 'bad'} label="다음" iconRight="arrow-right" onPress={onNext} />
@@ -121,8 +121,8 @@ function FeedbackSheet({ correct, word, type, note, onNext, onHeight }) {
   );
 }
 
-/* 순수 퀴즈 화면 — props로 단어/유형/콜백을 받는다 */
-export function QuizView({ type, word, pool, options: fixedOptions, progress, onBack, onResult, onNext, overlayTop }) {
+/* 순수 퀴즈 화면 — props로 단어/유형/콜백을 받는다. right = 상단 우측 라벨(재도전 라운드 표시용) */
+export function QuizView({ type, word, pool, options: fixedOptions, progress, right, onBack, onResult, onNext, overlayTop }) {
   const [selected, setSelected] = useState(null);
   const [submitted, setSubmitted] = useState(false);
   const [sheetH, setSheetH] = useState(0);   // 피드백 시트 높이(보기 끌어올림용)
@@ -161,7 +161,7 @@ export function QuizView({ type, word, pool, options: fixedOptions, progress, on
 
   return (
     <View style={{ flex: 1, backgroundColor: VP.bg }}>
-      <ProtoTopBar onBack={onBack} icon={<Icon name={typeIcon} size={16} color={VP.text} />} label={typeLabel} progress={progress} progressColor={VP.accent} />
+      <ProtoTopBar onBack={onBack} icon={<Icon name={typeIcon} size={16} color={VP.text} />} label={typeLabel} right={right} progress={progress} progressColor={VP.accent} />
 
       {/* 문제 — ★marginTop 32→28: 4개 퀴즈 유형의 상단 간격 통일(유형 회전 시 문제가 위아래로 튀던 문제) */}
       <View style={{ marginTop: 28, paddingHorizontal: 20, alignItems: 'center' }}>
@@ -391,16 +391,22 @@ function SpellQuiz({ word, progress, onBack, onResult, onNext }) {
   );
 }
 
-/* 퀴즈 래퍼 — 출제 = 학습 시작한 단어 전체(state.quizQueue). 문항 종류는 quizSlotFor로 회전(객관식/타일/듣기/스펠). */
+/* 퀴즈 래퍼 — 출제 = 학습 시작한 단어 전체(state.quizQueue). 문항 종류는 quizSlotFor로 회전(객관식/타일/듣기/스펠).
+   ★ quizRound 2 = 오답 재도전(mastery loop): 1R에서 틀린 문항을 다 맞힐 때까지 재출제.
+     재도전은 그 단어의 동결 4지선다로 재확인(타일/스펠 랜덤 재구성으로 인한 난이도 튐 방지). */
 export function QuizScreen({ state, dispatch }) {
   const queue = state.quizQueue || [];
-  const id = queue[state.quizIdx];
+  const isRetry = state.quizRound === 2;
+  const id = isRetry ? (state.quizRetry || [])[0] : queue[state.quizIdx];
   const word = id != null ? BY_ID[id] : null;
   if (!word) return null;
   const meta = quizMetaFor(id);                               // {type, options} — 그 단어가 정답인 검수된 문항
   const total = queue.length || 1;
-  const progress = (Math.min(state.quizIdx + 1, total) / total) * 100;
-  const slot = quizSlotFor(state.quizIdx, word);
+  const progress = isRetry
+    ? ((state.quizRetryInitial - (state.quizRetry || []).length) / Math.max(1, state.quizRetryInitial)) * 100
+    : (Math.min(state.quizIdx + 1, total) / total) * 100;
+  const slot = isRetry ? 'mc' : quizSlotFor(state.quizIdx, word);
+  const retryRight = isRetry ? `다시 · 남은 ${(state.quizRetry || []).length}` : undefined;
   const onResult = (outcome) => dispatch({ type: 'QUIZ_ANSWER', id: word.id, slot, outcome });
   const onBack = () => dispatch({ type: 'PAUSE' });
   const onNext = () => dispatch({ type: 'QUIZ_NEXT' });
@@ -418,7 +424,7 @@ export function QuizScreen({ state, dispatch }) {
   const pool = options || wordsForStage(homeStage ? homeStage.stage : state.activeStage);
   return (
     <QuizView
-      type={type} word={word} pool={pool} options={options} progress={progress}
+      type={type} word={word} pool={pool} options={options} progress={progress} right={retryRight}
       onBack={onBack} onResult={onResult} onNext={onNext}
     />
   );

@@ -28,12 +28,13 @@ function FilterChip({ children, active, tone, onPress }) {
   );
 }
 
-/* 형광펜 단어 행 — ← 헷갈려요(박스1, 형광펜 진해짐) / 익혔어요 → (박스↑, 형광펜 연해짐) */
-function WordbookRow({ word, ivl, isFav, onConfusing, onKnownStep, onFav, onTap }) {
+/* 형광펜 단어 행 — ← 헷갈려요(박스1, 형광펜 진해짐) / 익혔어요 → (박스↑, 형광펜 연해짐)
+   custom = 공유로 수집한 미등재 단어: 스와이프·★ 비활성 (숫자 id 기반 SRS/즐겨찾기 오염 방지) */
+function WordbookRow({ word, ivl, isFav, custom, onConfusing, onKnownStep, onFav, onTap }) {
   const tx = useRef(new Animated.Value(0)).current;
   const TH = 64;
   const pan = useRef(PanResponder.create({
-    onMoveShouldSetPanResponder: (e, g) => Math.abs(g.dx) > 8 && Math.abs(g.dx) > Math.abs(g.dy),   // 좌우 끌기 가로채기
+    onMoveShouldSetPanResponder: (e, g) => !custom && Math.abs(g.dx) > 8 && Math.abs(g.dx) > Math.abs(g.dy),   // 좌우 끌기 가로채기 (custom은 탭만)
     onPanResponderMove: (e, g) => tx.setValue(Math.max(-120, Math.min(120, g.dx))),
     onPanResponderRelease: (e, g) => {
       if (g.dx < -TH) onConfusing();
@@ -76,7 +77,9 @@ function WordbookRow({ word, ivl, isFav, onConfusing, onKnownStep, onFav, onTap 
       }}>
         <Pressable onPress={onTap} style={{ flex: 1, minWidth: 0, flexDirection: 'row', alignItems: 'center', gap: 6 }}>
           <View style={{ width: 40 }}>
-            <Text numberOfLines={1} style={{ fontSize: 11, color: VP.textMute, fontFamily: ff(600) }}>#{String(word.id).padStart(3, '0')}</Text>
+            {custom
+              ? <Icon name="pip" size={14} color={VP.textMute} />
+              : <Text numberOfLines={1} style={{ fontSize: 11, color: VP.textMute, fontFamily: ff(600) }}>#{String(word.id).padStart(3, '0')}</Text>}
           </View>
           <View style={{ flex: 1, minWidth: 0 }}>
             <View style={{ flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap' }}>
@@ -91,12 +94,14 @@ function WordbookRow({ word, ivl, isFav, onConfusing, onKnownStep, onFav, onTap 
           </View>
         </Pressable>
         <SpeakButton text={word.word} size={36} />
-        <Pressable onPress={onFav} hitSlop={4} style={{
-          width: 38, height: 38, borderRadius: 10, alignItems: 'center', justifyContent: 'center',
-          backgroundColor: isFav ? VP.accentSoft : 'transparent',
-        }}>
-          <Icon name={isFav ? 'star' : 'star-line'} size={20} color={isFav ? VP.accent : VP.textMute} />
-        </Pressable>
+        {!custom ? (
+          <Pressable onPress={onFav} hitSlop={4} style={{
+            width: 38, height: 38, borderRadius: 10, alignItems: 'center', justifyContent: 'center',
+            backgroundColor: isFav ? VP.accentSoft : 'transparent',
+          }}>
+            <Icon name={isFav ? 'star' : 'star-line'} size={20} color={isFav ? VP.accent : VP.textMute} />
+          </Pressable>
+        ) : <View style={{ width: 6 }} />}
       </Animated.View>
     </View>
   );
@@ -164,7 +169,7 @@ function WbTutorial({ onClose }) {
 }
 
 export default function Wordbook({ state, dispatch }) {
-  const [filter, setFilter] = useState('all'); // all | fav
+  const [filter, setFilter] = useState(state.vocabView === 'mine' ? 'mine' : 'all'); // all | fav | mine(공유로 수집)
   const [query, setQuery] = useState('');
   const [view, setView] = useState(state.vocabView === 'confusing' ? 'confusing' : 'list');   // list | confusing(헷갈리는 덱) — 통계 딥링크 지원
   const [detail, setDetail] = useState(null);
@@ -178,14 +183,27 @@ export default function Wordbook({ state, dispatch }) {
   const confCount = confIds.length;
   const confWords = useMemo(() => confIds.map(id => BY_ID[id]).filter(Boolean), [state.boxes]);
 
-  // 일반 리스트 (전체/즐겨찾기 + 검색)
+  // ★내 단어(2-3) — 공유 시트로 수집한 단어. 커리큘럼 매칭은 원본 단어 객체로,
+  //   미등재 단어는 의사(pseudo) 객체로 렌더 (_custom: 스와이프/★ 비활성 — SRS 오염 방지)
+  const myList = useMemo(() => (state.myWords || []).map(m => {
+    if (m.id && BY_ID[m.id]) return BY_ID[m.id];
+    return {
+      id: `u:${m.word}`, word: m.word, pos: m.pos || '',
+      korean: m.korean || (m.failed ? '뜻을 불러오지 못했어요' : '뜻 준비 중…'),
+      example: m.example || '', exampleKor: m.exampleKor || '', pronunciation: m.pron || '',
+      _custom: true,
+    };
+  }), [state.myWords]);
+
+  // 일반 리스트 (전체/즐겨찾기/내 단어 + 검색)
   const words = useMemo(() => {
     let list = VOCAB;
     if (filter === 'fav') list = list.filter(w => favSet.has(w.id));
+    if (filter === 'mine') list = myList;
     const q = query.trim().toLowerCase();
     if (q) list = list.filter(w => (w.word && w.word.toLowerCase().includes(q)) || meaningList(w).some(m => m.toLowerCase().includes(q)));
     return list;
-  }, [filter, query, favSet]);
+  }, [filter, query, favSet, myList]);
 
   const markConfusing = (w) => {
     seqRef.current += 1;
@@ -205,10 +223,10 @@ export default function Wordbook({ state, dispatch }) {
 
   const renderRow = ({ item: w }) => (
     <WordbookRow
-      word={w} ivl={ivlOf(w.id)} isFav={favSet.has(w.id)}
-      onConfusing={() => markConfusing(w)}
-      onKnownStep={() => markKnownStep(w)}
-      onFav={() => dispatch({ type: 'TOGGLE_FAV', id: w.id })}
+      word={w} ivl={w._custom ? 0 : ivlOf(w.id)} isFav={!w._custom && favSet.has(w.id)} custom={!!w._custom}
+      onConfusing={() => { if (!w._custom) markConfusing(w); }}
+      onKnownStep={() => { if (!w._custom) markKnownStep(w); }}
+      onFav={() => { if (!w._custom) dispatch({ type: 'TOGGLE_FAV', id: w.id }); }}
       onTap={() => setDetail(w)}
     />
   );
@@ -283,6 +301,10 @@ export default function Wordbook({ state, dispatch }) {
             {/* ★즐겨찾기 활성색 tone="accent" 제거 — 같은 세그먼트에서 활성색이 칩마다 달라(다크/핑크) 상태 언어가 이원화됐음. ★ 아이콘만으로 구분 충분 */}
             <FilterChip active={filter === 'all'} onPress={() => setFilter('all')}>전체 {VOCAB.length}</FilterChip>
             <FilterChip active={filter === 'fav'} onPress={() => setFilter('fav')}>★ 즐겨찾기 {state.favorites.length}</FilterChip>
+            {/* ★내 단어(2-3) — 공유 시트로 수집한 단어가 있을 때만 노출 */}
+            {(state.myWords || []).length > 0 ? (
+              <FilterChip active={filter === 'mine'} onPress={() => setFilter('mine')}>내 단어 {(state.myWords || []).length}</FilterChip>
+            ) : null}
           </ScrollView>
 
           {/* 헷갈리는 단어 진입 카드 (검색 중엔 숨김) */}
@@ -322,7 +344,9 @@ export default function Wordbook({ state, dispatch }) {
             renderItem={renderRow}
             ListEmptyComponent={<ListEmpty {...(query
               ? { title: '검색 결과 없음', sub: `'${query}'에 해당하는 단어가 없어요`, icon: 'search' }
-              : { title: '즐겨찾기한 단어가 없어요', sub: '단어 오른쪽 ★ 버튼을 눌러 자주 볼 단어를 모아보세요', icon: 'star-line' })} />}
+              : filter === 'mine'
+                ? { title: '수집한 단어가 없어요', sub: '다른 앱에서 모르는 단어를 선택해 popVOCA로 공유해 보세요', icon: 'pip' }
+                : { title: '즐겨찾기한 단어가 없어요', sub: '단어 오른쪽 ★ 버튼을 눌러 자주 볼 단어를 모아보세요', icon: 'star-line' })} />}
           />
         </>
       )}
@@ -333,9 +357,10 @@ export default function Wordbook({ state, dispatch }) {
       {detail ? (
         <WordDetail
           word={detail}
-          isFav={favSet.has(detail.id)}
-          ivl={(boxes[detail.id] && boxes[detail.id].ivl) || 0}
-          onToggleFav={() => dispatch({ type: 'TOGGLE_FAV', id: detail.id })}
+          isFav={!detail._custom && favSet.has(detail.id)}
+          ivl={(!detail._custom && boxes[detail.id] && boxes[detail.id].ivl) || 0}
+          hideFav={!!detail._custom}
+          onToggleFav={() => { if (!detail._custom) dispatch({ type: 'TOGGLE_FAV', id: detail.id }); }}
           onClose={() => setDetail(null)}
         />
       ) : null}

@@ -230,11 +230,13 @@ node vocapop-app/scripts/generate-domain-pack.js --domain dev --to 100
     <td align="center"><img src="docs/screenshots/worddetail.png" width="230" alt="단어 상세"/><br/><sub><b>단어 상세</b><br/>뜻 · 예문 · 학습 상태</sub></td>
   </tr>
   <tr>
-    <td align="center"><img src="docs/screenshots/stats.png" width="230" alt="통계"/><br/><sub><b>통계</b><br/>주간 학습 · 걸음 진척 · 정답률</sub></td>
-    <td align="center"><img src="docs/screenshots/settings.png" width="230" alt="설정"/><br/><sub><b>설정</b><br/>목표 · 알림 · 다크 모드 · 동기화</sub></td>
-    <td align="center"><sub>웹 미리보기 화면 캡처<br/>(안드로이드 빌드 시<br/>오버레이 · 잠금화면 기능 추가)</sub></td>
+    <td align="center"><img src="docs/screenshots/stats.png" width="230" alt="통계"/><br/><sub><b>통계</b><br/>다시 만나 이긴 단어 · 주간 학습 · 정답률</sub></td>
+    <td align="center"><img src="docs/screenshots/settings.png" width="230" alt="설정"/><br/><sub><b>설정</b><br/>예문 도메인 · 알림 시간 · 다크 모드</sub></td>
+    <td align="center"><img src="docs/screenshots/quiz-result.png" width="230" alt="퀴즈 결과 · 오답 재도전 완주"/><br/><sub><b>퀴즈 결과 (v2)</b><br/>오답 재도전 완주 배지</sub></td>
   </tr>
 </table>
+
+<sub>웹 미리보기 화면 캡처 — 안드로이드 빌드 시 오버레이 · 잠금화면 기능이 추가됩니다</sub>
 
 </div>
 

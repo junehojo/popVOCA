@@ -587,7 +587,11 @@ export default function App() {
     return (
       <SafeAreaView style={{ flex: 1, backgroundColor: VP.bg }}>
         <StatusBar barStyle={dark ? 'light-content' : 'dark-content'} backgroundColor={VP.bg} />
-        <Onboarding onDone={() => dispatch({ type: 'FINISH_ONBOARDING' })} />
+        {/* ★온보딩 마지막 스텝에서 고른 예문 도메인을 설정에 반영 — 이후 이펙트가 팩을 자동 로드 */}
+        <Onboarding onDone={(domain) => {
+          dispatch({ type: 'FINISH_ONBOARDING' });
+          if (domain) dispatch({ type: 'SET_SETTING', key: 'domain', value: domain });
+        }} />
       </SafeAreaView>
     );
   }

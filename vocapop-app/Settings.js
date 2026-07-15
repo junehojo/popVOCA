@@ -67,7 +67,7 @@ function DomainSheet({ visible, s, set, onClose }) {
           고른 분야의 문장으로 예문과 빈칸 문제가 바뀌어요. 단어와 보기(정답·오답)는 그대로예요.
         </Text>
         <ChipGroup title="분야" options={DOMAINS} value={s.domain || null} onSelect={(v) => { set('domain', v); onClose(); }} />
-        <Text style={{ fontSize: 12, color: VP.textMute, lineHeight: 17 }}>아직 준비 중인 분야는 기본 예문이 나와요 · 오프라인에서도 동작</Text>
+        <Text style={{ fontSize: 12, color: VP.textMute, lineHeight: 17 }}>아직 준비 중인 분야는 일상 예문이 나와요 · 오프라인에서도 동작</Text>
       </View>
     </Modal>
   );

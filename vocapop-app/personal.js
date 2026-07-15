@@ -6,7 +6,7 @@ import { supabase } from './supabase';
 
 /* 예문 도메인 — 사용자가 '고른' 관심 분야 (학습 부담 없이 맥락만 입히는 설계) */
 export const DOMAINS = [
-  { v: null, l: '기본' },
+  { v: null, l: '일상' },   // 팩 미적용 = 번들 기본 예문 (일상 톤) — 다른 칩과 같은 '분야명' 문법으로 통일
   { v: 'dev', l: '개발 · IT' },
   { v: 'med', l: '의학 · 바이오' },
   { v: 'biz', l: '비즈니스' },

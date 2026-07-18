@@ -80,12 +80,22 @@ const initial = {
   // 플래시카드 진행 (cardSession = 셔플된 세션 [{id,review}], cardQueue = 2R 드릴 id)
   cardRound: 1, cardIdx: 0, cardSession: [], cardQueue: [], cardResults: {}, cardR2Initial: 0,
   cardHistory: [],           // R1 답 기록 [{id,prevBox,know}] — '이전 카드'(답 정정)용, 비영속
+  // ★ cardNonce: 답할 때마다 +1 — R2에서 같은 id가 연속 재등장해도(잔여 1개 케이스) 플립 리셋 effect가 돌게 하는 키.
+  //   word.id만 deps로 쓰면 카드가 뒤집힌 채(뜻 노출) 재등장하는 버그가 있었음.
+  cardNonce: 0,
+  cardPointsBase: 0,         // ★세션 시작 시 points 스냅샷 — 완료 화면 '+NP' 성과 표시용
   reviewMode: false,         // true = 복습 전용 플래시카드(진도 안 건드림)
   reviewReturn: 'vocab',     // 복습 전용 세션 끝나고 돌아갈 화면 (vocab=헷갈리는 덱 / home=오늘의 복습)
   // 퀴즈 진행 (quizQueue = 출제 대상 id, quizReturn = 끝나고 돌아갈 화면)
   quizIdx: 0, quizResults: {}, quizQueue: [], quizReturn: 'home',
   // ★ 오답 재도전 라운드(mastery loop) — quizRound 2 = 1R에서 틀린 문항을 다 맞힐 때까지
   quizRound: 1, quizRetry: [], quizRetryInitial: 0, quizRetryLast: null,
+  // ★ 재도전 인터스티셜 — 1R 끝에 무예고로 2R 문항이 나오던 문제. true면 Quiz가 '재도전 시작' 전환 카드를 먼저 보여줌
+  quizRetryIntro: false,
+  // ★ 포인트 표기 정합 — 화면의 '+N'이 실제 적립액과 달랐던 버그(힌트 정답은 0점인데 ×5로 표시).
+  //   sessionEarned = 이번 퀴즈 실제 적립 합, quizHintCount = 힌트 보고 맞힌 수(스탯 라벨 병기용)
+  sessionEarned: 0, quizHintCount: 0,
+  homeToast: null,           // 홈 1회성 토스트(퀴즈/카드 X 이탈 시 '진행 저장됨' 안내) — 비영속
   // ★ 자기효능감 통계 — 단어별 {a:시도,c:정답,fw:첫시도오답,lc:최근정답}, 노출차수별 정답률 [정답,전체]
   wordStats: {}, expoStats: { e1: [0, 0], e2: [0, 0], e3: [0, 0] },
   myWords: [],               // ★ 공유 시트로 수집한 단어 [{word, id|null, korean?, at}] — id=커리큘럼 매칭
@@ -94,8 +104,9 @@ const initial = {
 const persistKeys = ['checkedCount', 'favorites', 'points', 'streak', 'todayLearned', 'dailyGoal', 'dailyLog', 'stageLog', 'settings', 'onboarded', 'wbTutorialSeen', 'boxes', 'sessionNo', 'overlayStage', 'overlayIdx', 'wordStats', 'expoStats', 'myWords'];
 // 진행 중이던 학습 세션 — 로컬에만 저장(클라우드 동기화 X). 앱을 닫았다 켜도 '이어하기'로 복원돼 진도가 안 날아감.
 const sessionKeys = ['screen', 'pausedScreen', 'activeStage', 'reviewMode', 'reviewReturn',
-  'cardRound', 'cardIdx', 'cardSession', 'cardQueue', 'cardResults', 'cardR2Initial',
-  'quizIdx', 'quizResults', 'quizQueue', 'quizReturn', 'quizRound', 'quizRetry', 'quizRetryInitial'];
+  'cardRound', 'cardIdx', 'cardSession', 'cardQueue', 'cardResults', 'cardR2Initial', 'cardPointsBase',
+  'quizIdx', 'quizResults', 'quizQueue', 'quizReturn', 'quizRound', 'quizRetry', 'quizRetryInitial',
+  'quizRetryIntro', 'sessionEarned', 'quizHintCount'];
 const FLOW_SCREENS = ['card', 'preview', 'cardR1End', 'quiz'];   // 학습 진행 화면(이어하기 대상)
 const FONT_SCALE = { small: 0.9, normal: 1, large: 1.12 };   // 글자 크기 설정 배율
 const addUniq = (a, n) => a.includes(n) ? a : [...a, n];
@@ -161,14 +172,14 @@ function reducer(state, a) {
       const ids = dueReviewIds(state.boxes, (state.sessionNo || 0) + 1, [], 20, state.favorites);
       if (ids.length === 0) return state;
       const cardSession = shuffle(ids).map(id => ({ id, review: true }));
-      return { ...state, screen: 'card', reviewMode: true, reviewReturn: 'home', cardRound: 1, cardIdx: 0, cardSession, cardQueue: [], cardResults: {}, cardHistory: [], cardR2Initial: 0, pausedScreen: null };
+      return { ...state, screen: 'card', reviewMode: true, reviewReturn: 'home', cardRound: 1, cardIdx: 0, cardSession, cardQueue: [], cardResults: {}, cardHistory: [], cardR2Initial: 0, cardNonce: 0, cardPointsBase: state.points, pausedScreen: null };
     }
     case 'START_CARD': {   // 세션 = 새 단어 20 + due 복습 ≤20 (★가중 샘플링, 랜덤 셔플). 미리보기부터.
       const cardSession = buildSession(a.stage, state.boxes, state.sessionNo, state.favorites);
-      return { ...state, screen: 'preview', activeStage: a.stage, cardRound: 1, cardIdx: 0, cardSession, cardQueue: [], cardResults: {}, cardHistory: [], reviewMode: false, pausedScreen: null };
+      return { ...state, screen: 'preview', activeStage: a.stage, cardRound: 1, cardIdx: 0, cardSession, cardQueue: [], cardResults: {}, cardHistory: [], reviewMode: false, cardNonce: 0, cardPointsBase: state.points, pausedScreen: null };
     }
     case 'START_CARD_R2':   // 1라운드 끝 → 2라운드(몰랐던 것 반복)
-      return { ...state, cardRound: 2, cardIdx: 0, screen: 'card' };
+      return { ...state, cardRound: 2, cardIdx: 0, screen: 'card', cardNonce: (state.cardNonce || 0) + 1 };
     case 'CARD_PREV': {   // R1 직전 카드로 — 실수로 누른 답(박스·포인트·오늘학습)을 되돌리고 다시 답하게
       const h = state.cardHistory || [];
       if (state.cardRound !== 1 || state.cardIdx === 0 || h.length === 0) return state;
@@ -184,12 +195,13 @@ function reducer(state, a) {
         ...state, boxes, cardResults, cardHistory: h.slice(0, -1), cardIdx: state.cardIdx - 1,
         points: Math.max(0, state.points - (last.know ? 2 : 0)),
         dailyLog, todayLearned: dailyLog[t] || 0, streak: computeStreak(dailyLog),
+        cardNonce: (state.cardNonce || 0) + 1,
       };
     }
     case 'START_QUIZ': {
       // 출제 = 그 걸음(세션)의 20단어 전부(셔플). 각 단어는 자기 동결 문항으로 출제.
       const queue = shuffle(wordsForStage(a.stage).map(w => w.id));
-      return { ...state, screen: 'quiz', activeStage: a.stage, quizIdx: 0, quizResults: {}, quizQueue: queue, quizReturn: 'home', quizRound: 1, quizRetry: [], quizRetryInitial: 0, quizRetryLast: null, pausedScreen: null };
+      return { ...state, screen: 'quiz', activeStage: a.stage, quizIdx: 0, quizResults: {}, quizQueue: queue, quizReturn: 'home', quizRound: 1, quizRetry: [], quizRetryInitial: 0, quizRetryLast: null, quizRetryIntro: false, sessionEarned: 0, quizHintCount: 0, pausedScreen: null };
     }
     case 'START_CONFUSING_REVIEW': {   // 단어장 '헷갈리는 단어' → 플래시카드 복습(박스 낮은 20개, 틀리면 박스1로 세션 합류)
       const ids = confusingIds(state.boxes).slice(0, 20);
@@ -200,10 +212,13 @@ function reducer(state, a) {
     case 'START_CONFUSING_QUIZ': {   // 헷갈리는 단어 테스트 — 박스 낮은 20개, 동결 문항 재사용. 끝나면 단어장 복귀.
       const queue = confusingIds(state.boxes).slice(0, 20);
       if (queue.length === 0) return state;
-      return { ...state, screen: 'quiz', quizIdx: 0, quizResults: {}, quizQueue: queue, quizReturn: 'vocab', quizRound: 1, quizRetry: [], quizRetryInitial: 0, quizRetryLast: null, pausedScreen: null };
+      return { ...state, screen: 'quiz', quizIdx: 0, quizResults: {}, quizQueue: queue, quizReturn: 'vocab', quizRound: 1, quizRetry: [], quizRetryInitial: 0, quizRetryLast: null, quizRetryIntro: false, sessionEarned: 0, quizHintCount: 0, pausedScreen: null };
     }
     case 'PAUSE':           // 플로우 중 뒤로 → 홈, 이어하기용으로 화면 기억
-      return { ...state, pausedScreen: state.screen, screen: 'home' };
+      // ★X 이탈이 '진행 날림'으로 오인되던 문제 — 저장 사실을 홈 1회성 토스트로 고지
+      return { ...state, pausedScreen: state.screen, screen: 'home', homeToast: '진행이 저장됐어요 · 이어하기로 계속할 수 있어요' };
+    case 'HOME_TOAST_CLEAR':
+      return { ...state, homeToast: null };
     case 'RESUME':
       return { ...state, screen: state.pausedScreen || 'home', pausedScreen: null };
     case 'DISMISS_RESUME':
@@ -220,7 +235,7 @@ function reducer(state, a) {
         const results = { ...state.cardResults, [a.id]: a.choice };
         const next = state.cardIdx + 1;
         const cardHistory = [...(state.cardHistory || []), { id: a.id, prevBox: state.boxes[a.id], know }].slice(-40);   // '이전 카드' 정정용
-        const base = { ...state, boxes, points, cardResults: results, cardHistory, ...daily };
+        const base = { ...state, boxes, points, cardResults: results, cardHistory, ...daily, cardNonce: (state.cardNonce || 0) + 1 };
         if (next >= state.cardSession.length) {
           const queue = state.cardSession.filter(c => results[c.id] === 'dontknow').map(c => c.id);   // 몰라요 → 드릴
           if (queue.length === 0) return finishCard(base);
@@ -230,15 +245,23 @@ function reducer(state, a) {
       } else { // 라운드2 = 드릴(몰라요 반복). 박스는 R1에서 이미 box1로 확정 → 여기선 큐만 관리.
         const q = state.cardQueue;
         const points = know ? state.points + 1 : state.points;
+        const cardNonce = (state.cardNonce || 0) + 1;   // ★같은 id 재등장에도 플립 리셋이 돌게
         if (know) {
           const nq = q.slice(1);
           if (nq.length === 0) return finishCard({ ...state, points, cardQueue: nq });
-          return { ...state, points, cardQueue: nq };
+          return { ...state, points, cardQueue: nq, cardNonce };
         }
         const rest = q.slice(1);
         const at = Math.min(2, rest.length);
-        return { ...state, points, cardQueue: [...rest.slice(0, at), q[0], ...rest.slice(at)] };
+        return { ...state, points, cardQueue: [...rest.slice(0, at), q[0], ...rest.slice(at)], cardNonce };
       }
+    }
+    case 'CARD_DEFER': {   // ★2R '이 단어는 나중에' — 안 외워지는 단어가 드릴 완주를 막지 않게 큐에서 보류.
+      //   박스는 R1에서 이미 1로 확정돼 있어 다음 세션 복습으로 자연 재등장 — 학습 루프에서 사라지지 않는다.
+      if (state.cardRound !== 2) return state;
+      const nq = (state.cardQueue || []).slice(1);
+      if (nq.length === 0) return finishCard({ ...state, cardQueue: nq });
+      return { ...state, cardQueue: nq, cardNonce: (state.cardNonce || 0) + 1 };
     }
     case 'QUIZ_ANSWER': {
       // outcome: correct | hintCorrect | wrong | dontknow / slot: mc|tile|listen|spell (구버전 a.correct도 호환)
@@ -251,6 +274,9 @@ function reducer(state, a) {
       if (state.quizRound === 2) return { ...state, quizRetryLast: gotWord ? 'o' : 'x' };
       const quizResults = { ...state.quizResults, [a.id]: gotWord ? 'o' : 'x' };
       const points = oc === 'correct' ? state.points + 5 : state.points;   // 깨끗한 정답만 +5
+      // ★결과 화면 표기 정합 — 실제 적립액과 힌트 정답 수를 별도 집계 (right×5 계산으로 부풀던 버그의 짝)
+      const sessionEarned = (state.sessionEarned || 0) + (oc === 'correct' ? 5 : 0);
+      const quizHintCount = (state.quizHintCount || 0) + (oc === 'hintCorrect' ? 1 : 0);
       const nb = boxAfterQuiz(state.boxes[a.id], slot, oc, state.sessionNo + 1);
       const boxes = nb ? { ...state.boxes, [a.id]: nb } : state.boxes;
       // ★ 자기효능감 통계 — 노출 차수별 정답률과 '첫 오답 → 최근 정답' 전환을 경량 집계.
@@ -260,7 +286,7 @@ function reducer(state, a) {
       const es = { e1: [0, 0], e2: [0, 0], e3: [0, 0], ...(state.expoStats || {}) };
       const bk = pw.a === 0 ? 'e1' : pw.a === 1 ? 'e2' : 'e3';
       const expoStats = { ...es, [bk]: [es[bk][0] + (gotWord ? 1 : 0), es[bk][1] + 1] };
-      return { ...state, quizResults, points, boxes, wordStats, expoStats };
+      return { ...state, quizResults, points, boxes, wordStats, expoStats, sessionEarned, quizHintCount };
     }
     case 'QUIZ_NEXT': {
       // ★ 2R(오답 재도전): 맞히면 큐에서 빠지고 또 틀리면 2칸 뒤 재삽입 — 전부 맞혀야 결과로.
@@ -287,13 +313,24 @@ function reducer(state, a) {
           const entry = { stage: state.activeStage, date: todayLabel(), acc, words: state.quizQueue.length, ts: todayKey() };
           out = { ...state, stageLog: [...(state.stageLog || []), entry] };
         }
-        // ★ 틀린 문항이 있으면 재도전 라운드로 (없으면 바로 결과)
+        // ★ 틀린 문항이 있으면 재도전 라운드로 — 인터스티셜('잠깐, N개만 다시')을 먼저 보여주고 탭으로 시작.
+        //   무예고로 2R 문항이 이어져 "버그난 줄 알았다"던 플로우 단절의 수정.
         const retry = (state.quizQueue || []).filter(id => state.quizResults[id] === 'x');
-        if (retry.length > 0) return { ...out, quizRound: 2, quizRetry: shuffle(retry), quizRetryInitial: retry.length, quizRetryLast: null };
+        if (retry.length > 0) return { ...out, quizRound: 2, quizRetry: shuffle(retry), quizRetryInitial: retry.length, quizRetryLast: null, quizRetryIntro: true };
         playSfx('complete'); hOk();
         return { ...out, screen: 'result' };
       }
       return { ...state, quizIdx: next };
+    }
+    case 'QUIZ_RETRY_BEGIN':   // 인터스티셜 '재도전 시작' 탭 → 2R 문항 진입
+      return { ...state, quizRetryIntro: false };
+    case 'START_WRONG_REVIEW': {   // ★결과 '틀린 N개 바로 복습' — 이번 세션 오답만 플래시카드로.
+      //   기존 '헷갈리는 단어 복습'은 전역 20개로 점프 + 단어장 착지라 방금 본 숫자와 대상이 어긋났음.
+      //   reviewReturn은 진입 맥락(quizReturn) 승계 — 홈에서 시작했으면 홈으로 돌아온다.
+      const ids = (state.quizQueue || []).filter(id => state.quizResults[id] === 'x');
+      if (ids.length === 0) return state;
+      const cardSession = shuffle(ids).map(id => ({ id, review: true }));
+      return { ...state, screen: 'card', reviewMode: true, reviewReturn: state.quizReturn === 'vocab' ? 'vocab' : 'home', cardRound: 1, cardIdx: 0, cardSession, cardQueue: [], cardResults: {}, cardHistory: [], cardR2Initial: 0, cardNonce: 0, cardPointsBase: state.points, pausedScreen: null };
     }
     case 'RECEIVE_SHARED': {
       // ★ 공유 시트/텍스트 선택으로 들어온 단어 수집.
@@ -337,6 +374,8 @@ function finishCard(state) {
     return { ...state, sessionNo: (state.sessionNo || 0) + 1, reviewMode: false, screen: state.reviewReturn || 'vocab' };
   }
   // 체크 트랙 전진 + 세션 완료 → 복습 클록(sessionNo) +1
+  // ★완료 신호 — 퀴즈 완료에만 있고 카드 완료엔 없던 sfx·햅틱 비일관 수정 (피크엔드의 '엔드' 보상)
+  playSfx('complete'); hOk();
   const checkedCount = Math.min(TOTAL, Math.max(state.checkedCount, state.activeStage));
   return { ...state, checkedCount, sessionNo: (state.sessionNo || 0) + 1, screen: 'cardDone' };
 }
@@ -587,10 +626,13 @@ export default function App() {
     return (
       <SafeAreaView style={{ flex: 1, backgroundColor: VP.bg }}>
         <StatusBar barStyle={dark ? 'light-content' : 'dark-content'} backgroundColor={VP.bg} />
-        {/* ★온보딩 마지막 스텝에서 고른 예문 도메인을 설정에 반영 — 이후 이펙트가 팩을 자동 로드 */}
-        <Onboarding onDone={(domain) => {
+        {/* ★온보딩 결과 반영 — domain(예문 도메인)과 wantLock(잠금화면 학습 켜기)을 설정에.
+            구버전 호환: onDone(domain 문자열)도 그대로 동작 */}
+        <Onboarding onDone={(res) => {
+          const r = res && typeof res === 'object' ? res : { domain: res };
           dispatch({ type: 'FINISH_ONBOARDING' });
-          if (domain) dispatch({ type: 'SET_SETTING', key: 'domain', value: domain });
+          if (r.domain) dispatch({ type: 'SET_SETTING', key: 'domain', value: r.domain });
+          if (r.wantLock) dispatch({ type: 'SET_SETTING', key: 'lockEnabled', value: true });
         }} />
       </SafeAreaView>
     );

@@ -10,6 +10,14 @@ const VP_LIGHT = {
   ...radii,
   bg: '#FCFDFF', surface: '#FFFFFF', surface2: '#F6F8FF',
   text: '#1F2430', textSub: '#697083', textMute: '#C8CEDA',
+  /* ★S1 대비 토큰 3종 — textMute(1.6:1)가 '안내·인터랙티브' 텍스트에 쓰이던 문제의 출구.
+     규칙: 기능 안내·탭 가능한 텍스트 = textSub(4.9:1) / 의도적 저강조 장식 = textFaint(3:1) /
+     흰·accentSoft 배경 위 11~13px 핑크 텍스트(배지·칩) = accentAA(4.5:1+) */
+  textFaint: '#A9B1C2',
+  accentAA: '#C2247E',
+  /* ★S1 CTA 배경 — 흰 라벨 on accent(#FF5BB8)가 2.8:1이라 전 CTA가 WCAG 미달이었음.
+     cta(#E83FA1)로 3.7:1 확보(17px/800 기준), ctaShade는 3D 푸시 그림자용 한 단계 어두운 톤 */
+  cta: '#E83FA1', ctaShade: '#C42E88',
   border: '#E8ECF5', borderStrong: '#1F2430', divider: '#F1F4FB',
   accent: '#FF5BB8', accentDeep: '#E83FA1', accentSoft: '#FFE3F3',
   flag: '#6C4BFF', flagDeep: '#5536E8',
@@ -26,6 +34,10 @@ const VP_DARK = {
   ...radii,
   bg: '#0E1015', surface: '#171A21', surface2: '#1E222B',
   text: '#ECEFF6', textSub: '#9BA3B4', textMute: '#596072',
+  /* ★S1 다크 대응 — faint는 다크 bg 위 3:1 근처로 밝게, accentAA는 밝은 핑크(다크 bg 대비 확보) */
+  textFaint: '#7A8296',
+  accentAA: '#FF8AD0',
+  cta: '#E83FA1', ctaShade: '#B02579',
   border: '#2A2F3A', borderStrong: '#ECEFF6', divider: '#23272F',
   accent: '#FF5BB8', accentDeep: '#FF8AD0', accentSoft: '#2E1F2A',
   flag: '#8B6FFF', flagDeep: '#6C4BFF',

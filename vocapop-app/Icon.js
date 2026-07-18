@@ -55,6 +55,13 @@ export function Icon({ name, size = 18, color = '#1F2430', strokeWidth = 1.75 })
     case 'heart': return <Svg {...v}><Path {...k} d="M12 20s-7-4.5-7-9.5A3.5 3.5 0 0 1 12 7a3.5 3.5 0 0 1 7 3.5C19 15.5 12 20 12 20z" /></Svg>;
     /* 끌기 손잡이 (단어장 스와이프 안내) — 점 6개 */
     case 'grip': return <Svg {...v}>{[8, 12, 16].map(cy => [9, 15].map(cx => <Circle key={`${cx}-${cy}`} cx={cx} cy={cy} r="1.4" fill={color} stroke="none" />))}</Svg>;
+    /* ★설정 개편용 5종 — 알림 시간(clock)·초기화(trash)·로그아웃(log-out)·비밀번호 표시 토글(eye/eye-off).
+       feather 계열 패스를 기존 관례(viewBox 24 / stroke 1.75 / round)로 이식 */
+    case 'clock': return <Svg {...v}><Circle {...k} cx="12" cy="12" r="9" /><Polyline {...k} points="12 7 12 12 15.5 14" /></Svg>;
+    case 'trash': return <Svg {...v}><Polyline {...k} points="3 6 5 6 21 6" /><Path {...k} d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6" /><Path {...k} d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" /><Line {...k} x1="10" y1="11" x2="10" y2="17" /><Line {...k} x1="14" y1="11" x2="14" y2="17" /></Svg>;
+    case 'log-out': return <Svg {...v}><Path {...k} d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" /><Polyline {...k} points="16 17 21 12 16 7" /><Line {...k} x1="21" y1="12" x2="9" y2="12" /></Svg>;
+    case 'eye': return <Svg {...v}><Path {...k} d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7z" /><Circle {...k} cx="12" cy="12" r="3" /></Svg>;
+    case 'eye-off': return <Svg {...v}><Path {...k} d="M17.94 17.94A10.07 10.07 0 0 1 12 19c-7 0-11-7-11-7a18.45 18.45 0 0 1 5.06-5.94M9.9 5.24A9.12 9.12 0 0 1 12 5c7 0 11 7 11 7a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24" /><Line {...k} x1="1" y1="1" x2="23" y2="23" /></Svg>;
     default: return null;
   }
 }

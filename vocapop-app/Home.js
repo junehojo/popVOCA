@@ -5,7 +5,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { View, Text, Pressable, PanResponder, LayoutAnimation, Platform, UIManager, Animated, Easing } from 'react-native';
 import Svg, { Circle, Polygon, Rect, Defs, LinearGradient, Stop } from 'react-native-svg';
 import { VP, ff, ls } from './theme';
-import { hTap, hSel } from './ui';
+import { hTap, hSel, BottomSheet, InlineToast } from './ui';
 import { Icon } from './Icon';
 import { TOTAL, C2_START_STAGE, wordsForStage, dueReviewIds } from './data';
 
@@ -58,7 +58,8 @@ function StepRow({ n, st, rel, contentW, isUser, onPress }) {
     bg = A.main; color = '#fff'; shade = A.deep;
     chipBg = 'rgba(255,255,255,0.24)'; chipCol = '#fff';
     chipIcon = challenge ? 'flame' : (st === 'done' ? 'pencil' : 'play');
-    right = <Text style={{ fontSize: 12, fontFamily: ff(700), color: '#fff' }}>{st === 'done' ? '퀴즈' : (challenge ? '도전' : '체크')}</Text>;
+    // ★라벨 정합 — '체크'는 행동이 안 그려져 '시작'으로, done의 '퀴즈'는 실제 탭 결과(다시보기·퀴즈 선택)와 어긋나 '복습'으로
+    right = <Text style={{ fontSize: 12, fontFamily: ff(700), color: '#fff' }}>{st === 'done' ? '복습' : (challenge ? '도전' : '시작')}</Text>;
   } else if (st === 'current') {
     bg = A.soft; color = A.deep; shade = A.shade; border = VP.border;
     chipBg = challenge ? A.main : VP.accentSoft; chipCol = challenge ? '#fff' : VP.accent; chipIcon = challenge ? 'flame' : 'play';
@@ -66,20 +67,26 @@ function StepRow({ n, st, rel, contentW, isUser, onPress }) {
   } else if (st === 'done') {
     bg = VP.surface; color = VP.text; shade = VP.border; border = VP.border;
     chipBg = A.soft; chipCol = A.deep; chipIcon = challenge ? 'flame' : 'pencil';
-    right = <Text style={{ fontSize: 11, fontFamily: ff(700), color: A.deep }}>{challenge ? '도전' : '퀴즈'}</Text>;
+    right = <Text style={{ fontSize: 11, fontFamily: ff(700), color: A.deep }}>{challenge ? '도전' : '복습'}</Text>;
   } else { // locked — 일반: 회색+자물쇠 / C2 도전: 연한 빨강+불꽃
-    bg = challenge ? A.soft : VP.surface2; color = challenge ? A.deep : VP.textMute; shade = challenge ? A.shade : VP.border;
-    chipBg = challenge ? A.main : VP.border; chipCol = challenge ? '#fff' : VP.textMute; chipIcon = challenge ? 'flame' : 'lock';
+    // ★잠긴 걸음 textMute(1.6:1)→textFaint(3:1) — '비활성 장식'용 토큰으로 승급, 걸음 번호가 아예 안 읽히던 문제
+    bg = challenge ? A.soft : VP.surface2; color = challenge ? A.deep : VP.textFaint; shade = challenge ? A.shade : VP.border;
+    chipBg = challenge ? A.main : VP.border; chipCol = challenge ? '#fff' : VP.textFaint; chipIcon = challenge ? 'flame' : 'lock';
   }
 
   const chip = isCenter ? 27 : 24;
   const dim = challenge && st === 'locked';   // 잠긴 도전구간: 글자·아이콘도 그림자처럼 연하게
+  const milestone = n % 10 === 0;   // ★10걸음 단위 마일스톤 — 긴 여정에 리듬(구간 감각)을 주는 장식
+  // ★a11y — 걸음 상태가 시각으로만 구분되던 것을 스크린리더 라벨로
+  const a11yLabel = st === 'done' ? `${n}걸음, 완료됨` : (st === 'current' ? `${n}걸음, 오늘 학습 시작` : `${n}걸음, 잠김`);
   return (
     <Animated.View style={{ position: 'absolute', right: 0, bottom, width: wAnim, height: P_SLOT_H + 4, zIndex: isUser ? 5 : 1, transform: [{ scale: popScale }] }}>
       {/* 두꺼운 바닥 그림자 (0 4px 0 0 shade) */}
       <View style={{ position: 'absolute', left: 0, right: 0, top: 4, height: P_SLOT_H, borderRadius: 12, backgroundColor: shade }} />
       {/* 면 */}
-      <Pressable onPress={onPress} style={({ pressed }) => ({
+      <Pressable onPress={onPress}
+        accessibilityRole="button" accessibilityLabel={a11yLabel}
+        style={({ pressed }) => ({
         position: 'absolute', top: 0, left: 0, right: 0, height: P_SLOT_H,
         borderRadius: 12, backgroundColor: bg,
         borderWidth: border ? 1 : 0, borderColor: border || 'transparent',
@@ -93,6 +100,12 @@ function StepRow({ n, st, rel, contentW, isUser, onPress }) {
           </View>
           {/* ★자간을 실제 크기 기준으로 (13일 때도 14 기준 자간을 쓰고 있었음) */}
           <Text style={{ marginLeft: 9, color, fontSize: isCenter ? 14 : 13, fontFamily: ff(isCenter ? 700 : 600), letterSpacing: ls(-0.02, isCenter ? 14 : 13) }}>{n}걸음</Text>
+          {/* ★마일스톤 뱃지(10의 배수) — 라벨이 이미 'N걸음'이라 텍스트 중복 대신 별 아이콘 pill만 장식으로 */}
+          {milestone ? (
+            <View importantForAccessibility="no" style={{ marginLeft: 6, height: 18, paddingHorizontal: 6, borderRadius: VP.rPill, backgroundColor: VP.accentSoft, alignItems: 'center', justifyContent: 'center' }}>
+              <Icon name="star" size={10} color={VP.accentAA} />
+            </View>
+          ) : null}
         </View>
         {right}
       </Pressable>
@@ -142,11 +155,16 @@ function DailyGoalCard({ state, dispatch }) {
     Animated.timing(prog, { toValue: pct, duration: 650, easing: Easing.out(Easing.cubic), useNativeDriver: false }).start();
   }, [pct]);
   const dashoffset = prog.interpolate({ inputRange: [0, 1], outputRange: [c, 0] });
+  const checkedCount = state.checkedCount || 0;
+  const coldStart = checkedCount === 0 && done === 0;   // ★콜드 스타트: 아직 아무것도 안 한 0% 상태
   return (
     /* ★paddingTop 6→0: 헤더 paddingTop 8→14 정렬(탭 간 타이틀 기준선 통일)의 세로 증가분 상쇄 */
     <View style={{ paddingHorizontal: 20, paddingTop: 0, paddingBottom: 8 }}>
       {/* ★radius 14→16(rLg)·pH 14→16: 아래 배너(16)와 같은 화면에 쌓이는데 곡률이 달랐음 */}
-      <Pressable onPress={() => dispatch({ type: 'GO', screen: 'stats' })} style={{
+      <Pressable onPress={() => dispatch({ type: 'GO', screen: 'stats' })}
+        accessible accessibilityRole="button"
+        accessibilityLabel={`오늘의 목표, 단어 ${state.todayLearned || 0}/${goal}개, ${checkedCount}/${TOTAL}걸음, 연속 ${state.streak || 0}일, 통계 보기`}
+        style={{
         backgroundColor: VP.surface, borderWidth: 1, borderColor: VP.divider, borderRadius: 16,
         paddingVertical: 12, paddingHorizontal: 16, flexDirection: 'row', alignItems: 'center',
       }}>
@@ -164,11 +182,20 @@ function DailyGoalCard({ state, dispatch }) {
         <View style={{ flex: 1, marginLeft: 12 }}>
           <Text style={{ fontSize: 13, fontFamily: ff(700), color: VP.text, letterSpacing: ls(-0.02, 13) }}>{reached ? '오늘 목표 달성!' : '오늘의 목표'}</Text>
           <Text style={{ fontSize: 12, color: VP.textSub, marginTop: 1 }}>단어 <Text style={{ color: VP.text, fontFamily: ff(700) }}>{state.todayLearned || 0}</Text> / {goal}개</Text>
+          {/* ★여정 맥락 1줄 — '오늘'만 보이고 전체 여정(몇 걸음/전체)이 어디서도 안 보이던 문제 */}
+          <Text style={{ fontSize: 11, fontFamily: ff(500), color: VP.textSub, marginTop: 2 }}>{checkedCount}/{TOTAL}걸음 · 단어 {checkedCount * 20}/{TOTAL * 20}</Text>
+          {/* ★콜드 스타트 마이크로카피 — 0%에서 링·숫자만 있으면 '뭘 해야 하나'가 비어 있음 */}
+          {coldStart ? <Text style={{ fontSize: 11, fontFamily: ff(700), color: VP.accentAA, marginTop: 2 }}>첫 20단어 시작</Text> : null}
         </View>
-        <View style={{ flexDirection: 'row', alignItems: 'center', paddingHorizontal: 10, paddingVertical: 5, borderRadius: 999, backgroundColor: VP.accentSoft }}>
-          <Icon name="flame" size={13} color={VP.accent} />
-          <Text style={{ marginLeft: 4, fontSize: 12, fontFamily: ff(700), color: VP.accent }}>{state.streak}일</Text>
-        </View>
+        {/* ★스트릭 0일 콜드 상태 — '🔥0일'은 실패처럼 읽힘 → 시작 유도 카피로 교체 */}
+        {(state.streak || 0) === 0 ? (
+          <Text style={{ fontSize: 12, fontFamily: ff(600), color: VP.textSub }}>오늘 시작하면 1일째</Text>
+        ) : (
+          <View style={{ flexDirection: 'row', alignItems: 'center', paddingHorizontal: 10, paddingVertical: 5, borderRadius: 999, backgroundColor: VP.accentSoft }}>
+            <Icon name="flame" size={13} color={VP.accent} />
+            <Text style={{ marginLeft: 4, fontSize: 12, fontFamily: ff(700), color: VP.accent }}>{state.streak}일</Text>
+          </View>
+        )}
         {/* ★탭 가능 어포던스 — 카드 전체가 통계로 가는 Pressable인데 힌트가 없어 발견 불가였음 */}
         <View style={{ marginLeft: 6 }}><Icon name="chevron-right" size={14} color={VP.textMute} /></View>
       </Pressable>
@@ -211,6 +238,35 @@ function StagePopover({ stage, stageState, dispatch, onClose }) {
         <View style={{ alignSelf: 'center', width: 14, height: 14, backgroundColor: VP.accent, transform: [{ rotate: '45deg' }], marginTop: -7 }} />
       </Animated.View>
     </View>
+  );
+}
+
+/* ───── 콜드 스타트 히어로 ─────
+   ★초반(checkedCount<4)엔 계단 아래가 비어 첫 화면이 허전하고 '뭘 배우는지'가 안 보였음.
+   다음 걸음 단어 3개를 미리 보여주고 탭 한 번으로 바로 학습 시작(계단 탭과 같은 동작). */
+function StartHero({ stage, dispatch }) {
+  const words = wordsForStage(stage).slice(0, 3);
+  return (
+    <Pressable onPress={() => dispatch({ type: 'START_CARD', stage })}
+      accessibilityRole="button" accessibilityLabel={`오늘의 20단어 미리보기, ${stage}걸음 학습 시작`}
+      style={({ pressed }) => ({
+        position: 'absolute', left: 0, right: 0, bottom: 112,
+        backgroundColor: VP.surface, borderRadius: VP.rLg, borderWidth: 1, borderColor: VP.border,
+        padding: 16, flexDirection: 'row', alignItems: 'center',
+        opacity: pressed ? 0.85 : 1,
+      })}>
+      <View style={{ flex: 1 }}>
+        <Text style={{ fontSize: 15, fontFamily: ff(700), color: VP.text, letterSpacing: ls(-0.02, 15) }}>오늘의 20단어 미리보기</Text>
+        <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginTop: 8 }}>
+          {words.map(w => (
+            <View key={w.id} style={{ backgroundColor: VP.surface2, borderRadius: VP.rSm, paddingHorizontal: 8, paddingVertical: 4 }}>
+              <Text style={{ fontSize: 12, fontFamily: ff(600), color: VP.textSub }}>{w.word}</Text>
+            </View>
+          ))}
+        </View>
+      </View>
+      <Icon name="chevron-right" size={16} color={VP.textSub} />
+    </Pressable>
   );
 }
 
@@ -290,6 +346,7 @@ export default function Home({ state, dispatch, onOverlay }) {
   const currentCheck = Math.min(P_TOTAL, checkedCount + 1);
   const [focused, setFocused] = useState(currentCheck);
   const [popover, setPopover] = useState(null);
+  const [pointsSheet, setPointsSheet] = useState(false);   // ★포인트 칩 탭 → 적립 규칙 안내 시트(데드엔드 해소)
   const [contentW, setContentW] = useState(310);
   const lastMoveY = useRef(null);
 
@@ -403,15 +460,24 @@ export default function Home({ state, dispatch, onOverlay }) {
       <View style={{ paddingTop: 14, paddingHorizontal: 20, paddingBottom: 10, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
         <Text style={{ fontSize: 24, fontFamily: ff(800), color: VP.text, letterSpacing: ls(-0.03, 24) }}><Text style={{ color: VP.accent }}>pop</Text>VOCA</Text>
         {/* 오버레이는 '다른 앱 위' 학습 전용 → 홈엔 버튼 없음. 카드 화면 / 설정에서 실행. */}
-        <View style={{ flexDirection: 'row', alignItems: 'center', paddingHorizontal: 12, paddingVertical: 6, backgroundColor: VP.accentSoft, borderRadius: 999 }}>
-          <Icon name="star" size={13} color={VP.accent} />
-          <Text style={{ marginLeft: 5, fontSize: 13, fontFamily: ff(700), color: VP.accent }}>{(state.points || 0).toLocaleString()}</Text>
-        </View>
+        {/* ★points===0(콜드 스타트)이면 미렌더 — '★0'은 정보가 아니라 결핍 표시였음.
+           ★탭 → 적립 규칙 시트: 눌러도 아무 일 없던 데드엔드 해소. accentSoft 위 13px 핑크는 accentAA로 대비 확보 */}
+        {(state.points || 0) > 0 ? (
+          <Pressable onPress={() => setPointsSheet(true)} hitSlop={8}
+            accessibilityRole="button" accessibilityLabel={`포인트 ${state.points || 0}점, 적립 방법 보기`}
+            style={{ flexDirection: 'row', alignItems: 'center', paddingHorizontal: 12, paddingVertical: 6, backgroundColor: VP.accentSoft, borderRadius: 999 }}>
+            <Icon name="star" size={13} color={VP.accentAA} />
+            <Text style={{ marginLeft: 5, fontSize: 13, fontFamily: ff(700), color: VP.accentAA }}>{(state.points || 0).toLocaleString()}</Text>
+          </Pressable>
+        ) : null}
       </View>
       <DailyGoalCard state={state} dispatch={dispatch} />
 
+      {/* ★배너 병합 — 이어하기가 뜨면 복습 정보가 통째로 사라졌음(상호배제).
+         배너 2장 스택 금지는 유지하되, 이어하기 sub에 대기 복습 수를 병기해 정보 손실 제거 */}
       {state.pausedScreen ? (
-        <HomeBanner icon="play" title="이어서 학습할까요?" sub={`${resumeLabel(state).label} · ${resumeLabel(state).sub}`}
+        <HomeBanner icon="play" title="이어서 학습할까요?"
+          sub={`${resumeLabel(state).label} · ${resumeLabel(state).sub}${dueCount > 0 ? ` · 복습 ${dueCount}개 대기 중` : ''}`}
           cta="이어하기" onPress={() => dispatch({ type: 'RESUME' })} />
       ) : null}
       {!state.pausedScreen && dueCount > 0 ? (
@@ -424,6 +490,13 @@ export default function Home({ state, dispatch, onOverlay }) {
         onLayout={(e) => setContentW(e.nativeEvent.layout.width - 40)}
         style={{ flex: 1, overflow: 'hidden', paddingHorizontal: 20 }}>
         <Animated.View style={{ flex: 1, transform: [{ translateY: slide }] }}>
+          {/* ★팝오버 백드롭 — 열린 상태에서 빈 영역 탭이 무반응이었음. 첫 자식(행·팝오버보다 아래)으로 깔아
+              행 탭은 기존 onStepPress(닫기 포함)가, 빈 영역 탭은 이 Pressable이 받아 닫는다.
+              slide 변환을 함께 타므로 음수 오프셋으로 계단 영역 전체를 여유 있게 덮는다 */}
+          {popover != null ? (
+            <Pressable onPress={() => setPopover(null)} accessibilityRole="button" accessibilityLabel="걸음 메뉴 닫기"
+              style={{ position: 'absolute', top: -P_STRIDE * 2, left: -20, right: -20, bottom: -P_STRIDE * 2 }} />
+          ) : null}
           {visible.map(n => (
             <StepRow key={n} n={n} st={stageStateOf(n)} rel={n - focused} contentW={contentW}
               isUser={n === currentCheck} onPress={() => onStepPress(n)} />
@@ -443,15 +516,40 @@ export default function Home({ state, dispatch, onOverlay }) {
             <Rect x="0" y="0" width="100%" height="64" fill="url(#ladderFade)" />
           </Svg>
         </View>
-        {/* ★스와이프 발견성 — 초반(아래 걸음이 없어 하단이 비는 구간)에만 제스처 힌트 노출 */}
+        {/* ★콜드 스타트 히어로 — 초반 계단 하단 빈 영역에 다음 걸음 미리보기 카드 */}
+        {checkedCount < 4 ? <StartHero stage={currentCheck} dispatch={dispatch} /> : null}
+        {/* ★스와이프 발견성 — 초반(아래 걸음이 없어 하단이 비는 구간)에만 제스처 힌트 노출.
+           카피는 행동+보상('밀어서 다음 걸음 미리보기')으로, textMute(1.6:1)→textSub(4.9:1)로 읽히게 */}
         {focused <= 2 && popover == null ? (
-          <Text pointerEvents="none" style={{ position: 'absolute', bottom: 88, alignSelf: 'center', fontSize: 12, color: VP.textMute, fontFamily: ff(500) }}>
-            위아래로 밀어 걸음을 둘러보세요
+          <Text pointerEvents="none" style={{ position: 'absolute', bottom: 88, alignSelf: 'center', fontSize: 12, color: VP.textSub, fontFamily: ff(500) }}>
+            밀어서 다음 걸음 미리보기
           </Text>
         ) : null}
       </View>
 
       <TabBar active="home" dispatch={dispatch} />
+
+      {/* ★홈 1회성 토스트 — PAUSE 등에서 세팅된 안내를 탭바 위에 잠깐 띄우고 자동 소거 */}
+      <InlineToast text={state.homeToast} bottom={96} onDone={() => dispatch({ type: 'HOME_TOAST_CLEAR' })} />
+
+      {/* ★포인트 적립 규칙 시트 — 포인트 칩 탭 데드엔드 해소 */}
+      <BottomSheet visible={pointsSheet} onClose={() => setPointsSheet(false)}>
+        <Text style={{ fontSize: 18, fontFamily: ff(800), color: VP.text, letterSpacing: ls(-0.02, 18), marginTop: 4 }}>포인트는 이렇게 쌓여요</Text>
+        {[
+          { icon: 'cards', label: '플래시카드에서 "알아요"', pts: '+2' },
+          { icon: 'pencil', label: '퀴즈 정답', pts: '+5' },
+          { icon: 'repeat', label: '재도전 완주 보너스', pts: '+1' },
+        ].map((row, i) => (
+          <View key={row.icon} accessible accessibilityLabel={`${row.label}, ${row.pts}점`}
+            style={{ flexDirection: 'row', alignItems: 'center', marginTop: i === 0 ? 16 : 12 }}>
+            <View style={{ width: 40, height: 40, borderRadius: VP.rMd, backgroundColor: VP.accentSoft, alignItems: 'center', justifyContent: 'center' }}>
+              <Icon name={row.icon} size={18} color={VP.accentAA} />
+            </View>
+            <Text style={{ flex: 1, marginLeft: 12, fontSize: 14, fontFamily: ff(600), color: VP.text, letterSpacing: ls(-0.01, 14) }}>{row.label}</Text>
+            <Text style={{ fontSize: 14, fontFamily: ff(800), color: VP.accentAA }}>{row.pts}</Text>
+          </View>
+        ))}
+      </BottomSheet>
     </View>
   );
 }

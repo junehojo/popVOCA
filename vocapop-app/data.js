@@ -128,6 +128,23 @@ export function quizSlotFor(idx, word) {
   if ((s === 'tile' || s === 'spell') && !(word && /^[a-zA-Z]{1,12}$/.test(word.word))) s = 'mc';
   return s;
 }
+/* ★난이도 매핑 v2 — 회전(유형 다양성)은 유지하되, 저숙련 단어의 고난도 회상 과제만 금지(다운그레이드 전용).
+   순수 ivl 계단으로 짜면 이 앱 SRS의 '첫 알아요=64 직행' 때문에 세션 퀴즈가 거의 전부 스펠이 되는 함정이 있다
+   (통합 검증에서 실측) — ivl은 '노출 횟수'가 아니라 '자기보고 숙련'의 프록시라서다.
+   ivl<=2(몰랐던 직후·틀린 직후): spell/tile → mc (재인으로 하향 — 크리틱의 핵심 지적 해소)
+   ivl<=16(외우는 중): spell → tile (회상 대신 조립까지만)
+   그 외(자기보고 알아요·졸업 근접): 회전 그대로 (mc3·tile1·listen1·spell1 다양성 유지)
+   기존 quizSlotFor는 시그니처·동작 그대로 유지(다른 소비자 호환) — 세션 퀴즈만 이 함수를 쓴다. */
+export function quizSlotForBox(boxes, id, idx) {
+  const ivl = (boxes && boxes[id] && boxes[id].ivl) || 0;
+  let s = QUIZ_SLOTS[idx % QUIZ_SLOTS.length];
+  if (ivl <= 2 && (s === 'spell' || s === 'tile')) s = 'mc';
+  else if (ivl <= 16 && s === 'spell') s = 'tile';
+  const w = BY_ID[id];
+  // 타자·조립 불가 단어(하이픈·공백·13자+)는 객관식 폴백 — quizSlotFor와 동일 가드
+  if ((s === 'tile' || s === 'spell') && !(w && /^[a-zA-Z]{1,12}$/.test(w.word))) s = 'mc';
+  return s;
+}
 // 학습 시작한(=박스 있는) 단어 id 목록
 export const startedIds = (boxes) => Object.keys(boxes || {}).map(Number);
 // 잘 아는(ivl>=16) / 외우는 중 집계

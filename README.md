@@ -15,14 +15,74 @@
 
 ---
 
-> ## 🆕 v2 — 학습과학 기반 학습 루프 고도화
+> ## 🆕 v3 — 디자인 시스템 · 코어 플로우 전면 개선
 >
-> 학습과학에서 검증된 메커니즘(인출 연습 · 간격 반복 · 자기효능감 · 맥락 학습)과
-> LLM 기반 콘텐츠 생성을 popVOCA의 학습 루프에 반영했습니다.
-> 무엇이 바뀌었는지는 바로 아래 [**v1에서 달라진 점**](#-v1에서-달라진-점) 섹션에 정리돼 있고,
-> v1 원본은 [`Mainbackup`](https://github.com/junehojo/popVOCA/tree/Mainbackup) 브랜치에 보존돼 있습니다.
+> 전 화면을 프로덕트 디자인 크리틱 관점(UX·UI 문제 / 접근성 / 감정 곡선 / 정보 구조)으로 다시 뜯어보고,
+> 도출된 개선을 구현했습니다. 대비·접근성 토큰, 코어 학습 루프의 상태 버그·플로우 단절 수정,
+> 온보딩·홈·퀴즈·결과·단어장·통계·설정 화면 리디자인이 포함됩니다.
+> 자세한 내용은 아래 [**v3에서 달라진 점**](#-v3에서-달라진-점) 섹션에 있습니다.
+>
+> **버전 계보** — v1 원본 [`Mainbackup`](https://github.com/junehojo/popVOCA/tree/Mainbackup) ·
+> v2(학습과학 루프) [`v2`](https://github.com/junehojo/popVOCA/tree/v2) · **v3(현재, 디자인 고도화)**.
+> v2에서 무엇이 들어왔는지는 아래 [**v2 — 학습과학 기반 학습 루프**](#-v2--학습과학-기반-학습-루프-v1-대비) 섹션에 그대로 남겨 두었습니다.
 
-## 🔬 v1에서 달라진 점
+## 🎨 v3에서 달라진 점
+
+디자인 크리틱에서 나온 지적을 **① 접근성·대비 시스템 → ② 코어 학습 루프(버그·플로우) → ③ 화면 리디자인** 순으로 반영했습니다.
+
+### ① 접근성 · 대비 시스템 (전 화면 공통)
+
+| 문제 | 개선 |
+|------|------|
+| 브랜드 핑크 `#FF5BB8` 위 흰 CTA 글자 = 약 **2.8:1** (WCAG AA 미달) | CTA 배경을 `#E83FA1`로 — **3.7:1** 확보 (`cta` 토큰) |
+| 안내·인터랙티브 텍스트에 `textMute`(약 **1.6:1**) 사용 — "탭해서 뒤집기"·"몰라요"·힌트가 사실상 비가시 | 안내/탭 가능 텍스트는 `textSub`(**4.9:1**), 의도적 저강조 장식만 신설 `textFaint`(3:1) |
+| 배지·칩의 accentSoft 배경 위 핑크 글자 = 약 **2.3:1** | `accentAA`(#C2247E) 토큰으로 대비 확보 |
+| 터치 타깃 37~40px 다수 (도메인 칩·몰라요·타일 슬롯·★) | 최소 **44px**(hitSlop 포함) 일괄 상향 |
+| 모션 강제 · 스크린리더 미대응 | `useReducedMotion` 분기, 인터랙티브 요소에 role/label/state, 뒤집히지 않은 카드 면 스크린리더에서 숨김 |
+
+- **공용 컴포넌트 통일** — 시트 3종의 제각각인 등장 모션을 `BottomSheet`(슬라이드업 + grabber 팬 dismiss) 하나로, 완료 신호를 `useCelebration`/`MiniStatRow`로, 1회성 피드백을 `InlineToast`로 통합.
+
+### ② 코어 학습 루프 — 버그 · 플로우
+
+**플래시카드**
+- **정답 노출 버그 수정** — 2라운드 드릴에서 마지막 한 단어가 재등장할 때 카드가 *뒤집힌 채(뜻이 보이는 채)* 나오던 상태 리셋 누락을 고침 (`cardNonce` 키로 같은 id 재등장에도 앞면 리셋)
+- 세션 내내 수십 번 누르는 **'알아요' 버튼 좌표 고정** (`[56px][flex1][flex1]` 3열 그리드) — 2번째 카드부터 버튼이 옆으로 밀리던 문제 해소
+- **자기평가 편향 제거** — '알아요'만 핑크로 강조해 긍정 답을 유도하던 것을, 정오 semantic만 남긴 soft 톤으로 (SRS 입력 데이터 오염 방지)
+- **완료 화면 보상** — 무음·무모션이던 걸음 완료에 사운드·햅틱·체크 스프링 연출 + 성과 카드(알아요/다시 봐서 외움/+P)
+
+**퀴즈**
+- **재도전 무예고 진입 → 인터스티셜** — 1라운드가 끝나면 곧장 다음 문항이 나와 "버그난 줄 알았다"던 플로우 단절을, "잠깐, 틀린 N개만 다시 풀어요" 예고 화면 + 세그먼트 진행 표시로 교체
+- **피드백 시트 확장** — 오답 순간이 학습 밀도가 가장 높은데 정보가 가장 얇던 문제. 이제 모든 유형에서 **예문(정답 단어 강조) + ★즐겨찾기 저장**을 노출, 스펠 오답은 글자 단위 diff
+- **몰라요/힌트 일원화**, **박스 간격(ivl) 기반 난이도 매핑** — 저숙련 단어에 최고난도 회상(스펠) 과제가 걸리던 것을 재인→조립→회상 계단으로
+
+**결과**
+- **오답 단어 리스트** — '오답 N'이라는 숫자만 주고 *무엇을* 틀렸는지 없던 것을, 발음·★저장 가능한 오답 목록으로
+- **포인트 표기 정합** — 힌트 보고 맞힌 문항까지 ×5로 부풀려 표시되던 버그를 실제 적립액 기준으로
+- **대상 일치 CTA** — '복습' 버튼이 방금 본 오답이 아니라 전역 단어로 점프하던 것을, "틀린 N개 바로 복습"으로 (진입 맥락도 승계)
+
+### ③ 화면 리디자인
+
+| 화면 | 핵심 변경 |
+|------|----------|
+| **온보딩** | 정적 텍스트 6스텝 → **4스텝** — 아이콘 대신 제품 목업(계단·잠금화면), 알림 권한 요청을 온보딩에 결합(약속-권한 분리 해소), 도메인 선택 시 실예문 프리뷰 |
+| **홈** | 신규 유저 '0% · 0일 · ★0' 콜드스타트 3연타 완화, **StartHero**(오늘 20단어 미리보기), 전체 여정 맥락(`N/132걸음`), 이어하기+복습 **배너 병합**, '체크→시작'·'퀴즈→복습' 라벨 정합 |
+| **단어장** | 걸음(20단어) **섹션 헤더 + 패스트 스크롤**, `#`번호(정렬 추론 불가) → **형광펜 강도 게이지**, 헷갈려요/익혔어요 **트리아지 3채널**(스와이프·롱프레스·상세) |
+| **통계** | 관리자 대시보드식(총량→진행) → **성취 우선 서사** — 자기효능감 카드 상단 승격, '평균 정답률' → '최근 정답률', 개발자 단위 7칸 → 의미 있는 3단계 |
+| **설정·로그인** | 순환 탭 컨트롤 → **선택 시트/세그먼트**, 위험 작업(초기화) 격리 + 파급 고지, 로그인 **신뢰 체인**(비밀번호 재설정·에러 한글화·약관·구글 브랜드 버튼) |
+
+| 주요 변경 파일 | 내용 |
+|--------------|------|
+| `theme.js` | `textFaint`·`accentAA`·`cta`·`ctaShade` 대비 토큰 (라이트/다크) |
+| `ui.js` | `BottomSheet`·`InlineToast`·`MiniStatRow`·`useReducedMotion` 신설, `VPButton` disabled 상태·`okSoft` variant |
+| `App.js` | `cardNonce`·`cardPointsBase`·`sessionEarned`·`quizHintCount`·`quizRetryIntro` 상태, `CARD_DEFER`·`START_WRONG_REVIEW`·`QUIZ_RETRY_BEGIN` 액션 |
+| `Onboarding.js` | 4스텝 재구성 + 제품 목업 + 스와이프/백 |
+| `Home.js` `Flashcard.js` `Quiz.js` `Result.js` `Wordbook.js` `WordDetail.js` `Stats.js` `Settings.js` `Auth.js` `data.js` `Icon.js` | 화면별 리디자인 (위 표) |
+
+> 전 플로우(온보딩→홈→카드→퀴즈→재도전→결과→단어장→통계→설정)를 웹 프리뷰 자동화로 실주행 검증했습니다. 잠금화면·공유 수집 등 네이티브 기능은 코드에 가드가 있으나 실기기 빌드 검증이 필요합니다.
+
+---
+
+## 🔬 v2 — 학습과학 기반 학습 루프 (v1 대비)
 
 ### 왜 바꿨나 — 설계 원리
 
@@ -215,33 +275,38 @@ node vocapop-app/scripts/generate-domain-pack.js --domain dev --to 100
 
 <table>
   <tr>
-    <td align="center"><img src="docs/screenshots/onboarding.png" width="230" alt="온보딩"/><br/><sub><b>온보딩</b><br/>계단 오르기 학습 소개</sub></td>
-    <td align="center"><img src="docs/screenshots/onboarding-domain.png" width="230" alt="온보딩 · 예문 도메인 선택"/><br/><sub><b>온보딩 · 도메인 선택 (v2)</b><br/>내 분야 문장으로 학습 시작 — 예문·빈칸 문제가 고른 분야로 바뀜</sub></td>
-    <td align="center"><img src="docs/screenshots/home.png" width="230" alt="홈 · 계단 진도"/><br/><sub><b>홈 · 계단 진도</b><br/>걸음마다 20단어씩 해금</sub></td>
+    <td align="center"><img src="docs/screenshots/onboarding.png" width="230" alt="온보딩 · 메커니즘"/><br/><sub><b>온보딩 ①</b><br/>제품 목업으로 계단·형광펜 소개</sub></td>
+    <td align="center"><img src="docs/screenshots/onboarding-lock.png" width="230" alt="온보딩 · 잠금화면"/><br/><sub><b>온보딩 ②</b><br/>잠금화면 학습 · 그 자리에서 켜기</sub></td>
+    <td align="center"><img src="docs/screenshots/onboarding-domain.png" width="230" alt="온보딩 · 도메인 선택"/><br/><sub><b>온보딩 ④</b><br/>분야 선택 → 실예문 프리뷰</sub></td>
   </tr>
   <tr>
-    <td align="center"><img src="docs/screenshots/lesson-preview.png" width="230" alt="레슨 미리보기"/><br/><sub><b>레슨 미리보기</b><br/>이번에 외울 20단어 훑기</sub></td>
+    <td align="center"><img src="docs/screenshots/home.png" width="230" alt="홈 · 계단 진도"/><br/><sub><b>홈</b><br/>여정 맥락 · StartHero · 배너 병합</sub></td>
+    <td align="center"><img src="docs/screenshots/lesson-preview.png" width="230" alt="레슨 미리보기"/><br/><sub><b>레슨 미리보기</b><br/>새 단어/복습 그룹 · 전체 듣기</sub></td>
+    <td align="center"><img src="docs/screenshots/flashcard-back.png" width="230" alt="플래시카드 뒷면"/><br/><sub><b>플래시카드</b><br/>뜻·예문 · 편향 없는 알아요/몰라요</sub></td>
+  </tr>
+  <tr>
+    <td align="center"><img src="docs/screenshots/complete.png" width="230" alt="걸음 완료"/><br/><sub><b>걸음 완료</b><br/>완료 연출 + 성과 카드</sub></td>
+    <td align="center"><img src="docs/screenshots/quiz.png" width="230" alt="퀴즈 문항"/><br/><sub><b>퀴즈 점검</b><br/>6유형 · 난이도 계단 배정</sub></td>
+    <td align="center"><img src="docs/screenshots/quiz-feedback.png" width="230" alt="퀴즈 피드백"/><br/><sub><b>퀴즈 피드백</b><br/>예문·오답 해설 · ★저장</sub></td>
+  </tr>
+  <tr>
+    <td align="center"><img src="docs/screenshots/quiz-retry.png" width="230" alt="오답 재도전 인터스티셜"/><br/><sub><b>오답 재도전</b><br/>예고 화면 → 틀린 것만 다시</sub></td>
+    <td align="center"><img src="docs/screenshots/quiz-result.png" width="230" alt="퀴즈 결과"/><br/><sub><b>퀴즈 결과</b><br/>오답 리스트 · 정확한 포인트</sub></td>
+    <td align="center"><img src="docs/screenshots/stats.png" width="230" alt="통계"/><br/><sub><b>통계</b><br/>성취 우선 재배열 · 최근 정답률</sub></td>
+  </tr>
+  <tr>
+    <td align="center"><img src="docs/screenshots/wordbook.png" width="230" alt="단어장"/><br/><sub><b>단어장</b><br/>걸음 섹션 · 형광펜 강도 게이지</sub></td>
+    <td align="center"><img src="docs/screenshots/worddetail.png" width="230" alt="단어 상세"/><br/><sub><b>단어 상세</b><br/>뜻·예문 · 헷갈려요/즐겨찾기</sub></td>
+    <td align="center"><img src="docs/screenshots/settings.png" width="230" alt="설정"/><br/><sub><b>설정</b><br/>선택 시트 · 위험작업 격리</sub></td>
+  </tr>
+  <tr>
+    <td align="center"><img src="docs/screenshots/auth-login.png" width="230" alt="로그인"/><br/><sub><b>로그인</b><br/>신뢰 체인 · 비밀번호 찾기·약관</sub></td>
     <td align="center"><img src="docs/screenshots/flashcard-front.png" width="230" alt="플래시카드 앞면"/><br/><sub><b>플래시카드 (앞)</b><br/>단어 · 발음 · TTS</sub></td>
-    <td align="center"><img src="docs/screenshots/flashcard-back.png" width="230" alt="플래시카드 뒷면"/><br/><sub><b>플래시카드 (뒤)</b><br/>뜻 · 예문 · 알아요/몰라요</sub></td>
-  </tr>
-  <tr>
-    <td align="center"><img src="docs/screenshots/complete.png" width="230" alt="걸음 완료"/><br/><sub><b>걸음 완료</b><br/>체크 트랙 → 퀴즈로 정복</sub></td>
-    <td align="center"><img src="docs/screenshots/quiz.png" width="230" alt="퀴즈"/><br/><sub><b>퀴즈 점검</b><br/>6유형 (빈칸/뜻/타일…)</sub></td>
-    <td align="center"><img src="docs/screenshots/wordbook.png" width="230" alt="단어장"/><br/><sub><b>단어장</b><br/>2,640단어 · 검색 · 즐겨찾기</sub></td>
-  </tr>
-  <tr>
-    <td align="center"><img src="docs/screenshots/worddetail.png" width="230" alt="단어 상세"/><br/><sub><b>단어 상세</b><br/>뜻 · 예문 · 학습 상태</sub></td>
-    <td align="center"><img src="docs/screenshots/stats.png" width="230" alt="통계"/><br/><sub><b>통계</b><br/>다시 만나 이긴 단어 · 주간 학습 · 정답률</sub></td>
-    <td align="center"><img src="docs/screenshots/settings.png" width="230" alt="설정"/><br/><sub><b>설정</b><br/>예문 도메인 · 알림 시간 · 다크 모드</sub></td>
-  </tr>
-  <tr>
-    <td align="center"><img src="docs/screenshots/quiz-result.png" width="230" alt="퀴즈 결과 · 오답 재도전 완주"/><br/><sub><b>퀴즈 결과 (v2)</b><br/>오답 재도전 완주 배지</sub></td>
-    <td></td>
-    <td></td>
+    <td align="center"><img src="docs/screenshots/onboarding-noti.png" width="230" alt="온보딩 · 알림"/><br/><sub><b>온보딩 ③</b><br/>알림 권한을 약속과 같은 화면에서</sub></td>
   </tr>
 </table>
 
-<sub>웹 미리보기 화면 캡처 — 안드로이드 빌드 시 오버레이 · 잠금화면 기능이 추가됩니다</sub>
+<sub>웹 미리보기 화면 캡처 (v3) — 안드로이드 빌드 시 오버레이 · 잠금화면 기능이 추가됩니다</sub>
 
 </div>
 
@@ -337,6 +402,8 @@ cd android && ./gradlew :app:assembleRelease
 ## 📌 현재 상태
 
 동작·배포 완료 (**v18 / versionCode 18**). 박스형 SRS · 6유형 퀴즈 · 잠금화면 학습 · 플로팅 오버레이 · 복습 알림 · 세션 저장·이어하기 · Supabase 클라우드 동기화 구현됨.
+
+**v3(현재 브랜치)** — 위 [v3에서 달라진 점](#-v3에서-달라진-점)의 디자인·접근성·플로우 개선을 반영. 웹 프리뷰 자동화로 전 플로우 실주행 검증 완료, 네이티브 기능(오버레이·잠금·공유 수집)은 실기기 빌드 검증 대기.
 
 ---
 

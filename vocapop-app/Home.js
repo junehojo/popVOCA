@@ -251,7 +251,7 @@ function StartHero({ stage, dispatch }) {
     <Pressable onPress={() => dispatch({ type: 'START_CARD', stage })}
       accessibilityRole="button" accessibilityLabel={`오늘의 20단어 미리보기, ${stage}걸음 학습 시작`}
       style={({ pressed }) => ({
-        marginHorizontal: 20, marginTop: 8,
+        marginHorizontal: 20, marginTop: 8, marginBottom: 16,   // ★하단 여백 — 탭바와 바짝 붙던 것 띄움
         backgroundColor: VP.surface, borderRadius: VP.rLg, borderWidth: 1, borderColor: VP.border,
         padding: 16, flexDirection: 'row', alignItems: 'center',
         opacity: pressed ? 0.85 : 1,

@@ -275,9 +275,9 @@ node vocapop-app/scripts/generate-domain-pack.js --domain dev --to 100
 
 <table>
   <tr>
-    <td align="center"><img src="docs/screenshots/onboarding.png" width="230" alt="온보딩 · 메커니즘"/><br/><sub><b>온보딩 ①</b><br/>제품 목업으로 계단·형광펜 소개</sub></td>
-    <td align="center"><img src="docs/screenshots/onboarding-lock.png" width="230" alt="온보딩 · 잠금화면"/><br/><sub><b>온보딩 ②</b><br/>잠금화면 학습 · 그 자리에서 켜기</sub></td>
-    <td align="center"><img src="docs/screenshots/onboarding-domain.png" width="230" alt="온보딩 · 도메인 선택"/><br/><sub><b>온보딩 ④</b><br/>분야 선택 → 실예문 프리뷰</sub></td>
+    <td align="center"><img src="docs/screenshots/onboarding-2.png" width="230" alt="온보딩 · 메커니즘"/><br/><sub><b>온보딩 ①</b><br/>제품 목업으로 계단·형광펜 소개</sub></td>
+    <td align="center"><img src="docs/screenshots/onboarding-lock-2.png" width="230" alt="온보딩 · 잠금화면"/><br/><sub><b>온보딩 ②</b><br/>잠금화면 학습 · 그 자리에서 켜기</sub></td>
+    <td align="center"><img src="docs/screenshots/onboarding-domain-2.png" width="230" alt="온보딩 · 도메인 선택"/><br/><sub><b>온보딩 ④</b><br/>분야 선택 → 실예문 프리뷰</sub></td>
   </tr>
   <tr>
     <td align="center"><img src="docs/screenshots/home-3.png" width="230" alt="홈 · 계단 진도"/><br/><sub><b>홈</b><br/>여정 맥락 · StartHero · 배너 병합</sub></td>
@@ -302,7 +302,7 @@ node vocapop-app/scripts/generate-domain-pack.js --domain dev --to 100
   <tr>
     <td align="center"><img src="docs/screenshots/auth-login.png" width="230" alt="로그인"/><br/><sub><b>로그인</b><br/>신뢰 체인 · 비밀번호 찾기·약관</sub></td>
     <td align="center"><img src="docs/screenshots/flashcard-front-2.png" width="230" alt="플래시카드 앞면"/><br/><sub><b>플래시카드 (앞)</b><br/>단어 · 발음 · TTS</sub></td>
-    <td align="center"><img src="docs/screenshots/onboarding-noti.png" width="230" alt="온보딩 · 알림"/><br/><sub><b>온보딩 ③</b><br/>알림 권한을 약속과 같은 화면에서</sub></td>
+    <td align="center"><img src="docs/screenshots/onboarding-noti-2.png" width="230" alt="온보딩 · 알림"/><br/><sub><b>온보딩 ③</b><br/>알림 권한을 약속과 같은 화면에서</sub></td>
   </tr>
 </table>
 

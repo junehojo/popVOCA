@@ -199,9 +199,10 @@ export default function Onboarding({ onDone }) {
         </Pressable>
       </View>
 
-      {/* 본문 — ★세로 중앙 정렬 폐기 → 상단 14% 앵커: 스텝마다 콘텐츠 높이가 달라도 제목 위치가 안 튐 */}
+      {/* 본문 — ★헤더~CTA 사이 공간에 세로 중앙 정렬. 상단 14% 앵커는 하단이 크게 비어 top-heavy했음.
+          이 영역은 하단 footer가 상단보다 커서, 중앙 정렬 시 화면 중심보다 살짝 위(광학 중심)에 놓임 = 균형 배치 */}
       <Animated.View {...pan.panHandlers} style={{
-        flex: 1, paddingHorizontal: 32, paddingTop: '14%', alignItems: 'center',
+        flex: 1, paddingHorizontal: 32, justifyContent: 'center', alignItems: 'center',
         opacity: fade, transform: [{ translateY: fade.interpolate({ inputRange: [0, 1], outputRange: [6, 0] }) }],
       }}>
         {idx === 0 && (

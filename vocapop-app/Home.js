@@ -243,14 +243,15 @@ function StagePopover({ stage, stageState, dispatch, onClose }) {
 
 /* ───── 콜드 스타트 히어로 ─────
    ★초반(checkedCount<4)엔 계단 아래가 비어 첫 화면이 허전하고 '뭘 배우는지'가 안 보였음.
-   다음 걸음 단어 3개를 미리 보여주고 탭 한 번으로 바로 학습 시작(계단 탭과 같은 동작). */
+   다음 걸음 단어 3개를 미리 보여주고 탭 한 번으로 바로 학습 시작(계단 탭과 같은 동작).
+   ★배치: 계단 컨테이너 밖 하단(탭바 위)에 도킹 — 예전엔 계단 안 absolute라 완료 걸음과 겹쳤음. */
 function StartHero({ stage, dispatch }) {
   const words = wordsForStage(stage).slice(0, 3);
   return (
     <Pressable onPress={() => dispatch({ type: 'START_CARD', stage })}
       accessibilityRole="button" accessibilityLabel={`오늘의 20단어 미리보기, ${stage}걸음 학습 시작`}
       style={({ pressed }) => ({
-        position: 'absolute', left: 0, right: 0, bottom: 112,
+        marginHorizontal: 20, marginTop: 8,
         backgroundColor: VP.surface, borderRadius: VP.rLg, borderWidth: 1, borderColor: VP.border,
         padding: 16, flexDirection: 'row', alignItems: 'center',
         opacity: pressed ? 0.85 : 1,
@@ -516,16 +517,17 @@ export default function Home({ state, dispatch, onOverlay }) {
             <Rect x="0" y="0" width="100%" height="64" fill="url(#ladderFade)" />
           </Svg>
         </View>
-        {/* ★콜드 스타트 히어로 — 초반 계단 하단 빈 영역에 다음 걸음 미리보기 카드 */}
-        {checkedCount < 4 ? <StartHero stage={currentCheck} dispatch={dispatch} /> : null}
         {/* ★스와이프 발견성 — 초반(아래 걸음이 없어 하단이 비는 구간)에만 제스처 힌트 노출.
            카피는 행동+보상('밀어서 다음 걸음 미리보기')으로, textMute(1.6:1)→textSub(4.9:1)로 읽히게 */}
         {focused <= 2 && popover == null ? (
-          <Text pointerEvents="none" style={{ position: 'absolute', bottom: 88, alignSelf: 'center', fontSize: 12, color: VP.textSub, fontFamily: ff(500) }}>
+          <Text pointerEvents="none" style={{ position: 'absolute', bottom: 24, alignSelf: 'center', fontSize: 12, color: VP.textSub, fontFamily: ff(500) }}>
             밀어서 다음 걸음 미리보기
           </Text>
         ) : null}
       </View>
+
+      {/* ★콜드 스타트 히어로 — 계단 밖 하단에 도킹(탭바 위). 완료 걸음과 겹치지 않게 컨테이너 밖으로 */}
+      {checkedCount < 4 ? <StartHero stage={currentCheck} dispatch={dispatch} /> : null}
 
       <TabBar active="home" dispatch={dispatch} />
 

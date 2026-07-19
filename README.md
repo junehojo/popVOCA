@@ -282,7 +282,7 @@ node vocapop-app/scripts/generate-domain-pack.js --domain dev --to 100
   <tr>
     <td align="center"><img src="docs/screenshots/home.png" width="230" alt="홈 · 계단 진도"/><br/><sub><b>홈</b><br/>여정 맥락 · StartHero · 배너 병합</sub></td>
     <td align="center"><img src="docs/screenshots/lesson-preview.png" width="230" alt="레슨 미리보기"/><br/><sub><b>레슨 미리보기</b><br/>새 단어/복습 그룹 · 전체 듣기</sub></td>
-    <td align="center"><img src="docs/screenshots/flashcard-back.png" width="230" alt="플래시카드 뒷면"/><br/><sub><b>플래시카드</b><br/>뜻·예문 · 편향 없는 알아요/몰라요</sub></td>
+    <td align="center"><img src="docs/screenshots/flashcard-back-2.png" width="230" alt="플래시카드 뒷면"/><br/><sub><b>플래시카드</b><br/>뜻·예문 · 편향 없는 알아요/몰라요</sub></td>
   </tr>
   <tr>
     <td align="center"><img src="docs/screenshots/complete.png" width="230" alt="걸음 완료"/><br/><sub><b>걸음 완료</b><br/>완료 연출 + 성과 카드</sub></td>
@@ -301,7 +301,7 @@ node vocapop-app/scripts/generate-domain-pack.js --domain dev --to 100
   </tr>
   <tr>
     <td align="center"><img src="docs/screenshots/auth-login.png" width="230" alt="로그인"/><br/><sub><b>로그인</b><br/>신뢰 체인 · 비밀번호 찾기·약관</sub></td>
-    <td align="center"><img src="docs/screenshots/flashcard-front.png" width="230" alt="플래시카드 앞면"/><br/><sub><b>플래시카드 (앞)</b><br/>단어 · 발음 · TTS</sub></td>
+    <td align="center"><img src="docs/screenshots/flashcard-front-2.png" width="230" alt="플래시카드 앞면"/><br/><sub><b>플래시카드 (앞)</b><br/>단어 · 발음 · TTS</sub></td>
     <td align="center"><img src="docs/screenshots/onboarding-noti.png" width="230" alt="온보딩 · 알림"/><br/><sub><b>온보딩 ③</b><br/>알림 권한을 약속과 같은 화면에서</sub></td>
   </tr>
 </table>

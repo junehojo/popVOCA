@@ -180,7 +180,7 @@ export function ResultScore({ state, dispatch }) {
             {/* ★힌트 보고 맞힌 문항 병기 — '정답 15'만 보면 적립 +NP와 안 맞아 보이는 정합 문제 해소 */}
             <Stat label={hints > 0 ? `정답 · 힌트 ${hints}` : '정답'} value={right} color={VP.ok} />
             <Stat label="오답" value={wrong} color={VP.bad} />
-            <Stat label="포인트" value={`+${earned}`} color={VP.accent} icon="star" />
+            <Stat label="포인트" value={`+${earned}`} color={VP.accent} icon="sparkle" />
           </View>
         </View>
 

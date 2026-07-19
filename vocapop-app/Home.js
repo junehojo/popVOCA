@@ -467,7 +467,8 @@ export default function Home({ state, dispatch, onOverlay }) {
           <Pressable onPress={() => setPointsSheet(true)} hitSlop={8}
             accessibilityRole="button" accessibilityLabel={`포인트 ${state.points || 0}점, 적립 방법 보기`}
             style={{ flexDirection: 'row', alignItems: 'center', paddingHorizontal: 12, paddingVertical: 6, backgroundColor: VP.accentSoft, borderRadius: 999 }}>
-            <Icon name="star" size={13} color={VP.accentAA} />
+            {/* ★포인트 아이콘 star→sparkle: 즐겨찾기(★)와 같은 별이라 헷갈렸음. 포인트=✨/즐겨찾기=★/스트릭=🔥로 구분 */}
+            <Icon name="sparkle" size={13} color={VP.accentAA} />
             <Text style={{ marginLeft: 5, fontSize: 13, fontFamily: ff(700), color: VP.accentAA }}>{(state.points || 0).toLocaleString()}</Text>
           </Pressable>
         ) : null}

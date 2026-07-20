@@ -482,8 +482,9 @@ export default function Home({ state, dispatch, onOverlay }) {
           sub={`${resumeLabel(state).label} · ${resumeLabel(state).sub}${dueCount > 0 ? ` · 복습 ${dueCount}개 대기 중` : ''}`}
           cta="이어하기" onPress={() => dispatch({ type: 'RESUME' })} />
       ) : null}
+      {/* ★sub를 평서문→권유형 질문으로: '안내(N개 있어요) → 권유(같이 끝낼까요?)' 흐름이 자연스러움 */}
       {!state.pausedScreen && dueCount > 0 ? (
-        <HomeBanner icon="repeat" title={`복습 ${dueCount}개가 기다려요`} sub="새 단어 없이 복습만 빠르게 끝내요"
+        <HomeBanner icon="repeat" title={`복습 ${dueCount}개가 기다려요`} sub="새 단어 없이 복습만 끝내볼까요?"
           cta="복습" onPress={() => dispatch({ type: 'START_DUE_REVIEW' })} />
       ) : null}
 

@@ -122,6 +122,8 @@ export function VPButton({ label, icon, iconRight, children, variant = 'default'
     ok:       { bg: VP.ok,          color: '#fff',    shade: VP.okDeep,      weight: 800 },
     /* ★플래시카드 '알아요' 편향 제거용 — 몰라요(soft)와 채도를 맞춘 soft 톤, 정오 semantic만 남김 */
     okSoft:   { bg: VP.okSoft,      color: VP.okDeep, shade: VP.pushShade,   weight: 800, ring: VP.pushRing },
+    /* ★연한 핑크 강조 — accent(진한 핑크) 다음 위계. '계속 학습' 계열 보조 액션용(예: 완료 화면 '다음 20단어') */
+    accentSoft: { bg: VP.accentSoft, color: VP.accentAA, shade: VP.doneShade, weight: 800 },
     bad:      { bg: VP.bad,         color: '#fff',    shade: VP.badDeep,     weight: 800 },
   };
   const v = VARIANTS[variant] || VARIANTS.default;

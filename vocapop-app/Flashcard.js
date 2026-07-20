@@ -322,10 +322,11 @@ export function CardDoneScreen({ state, dispatch }) {
             ) : null
           ) : (
             /* ★'다음 걸음 체크'→'다음 20단어 시작' — 누르면 뭐가 되는지 그대로 말하는 라벨 */
-            <VPButton variant="default" full={false} style={{ flex: 1 }} label="다음 20단어 시작" onPress={() => dispatch({ type: 'START_CARD', stage: state.checkedCount + 1 })} />
+            <VPButton variant="soft" full={false} style={{ flex: 1 }} label="다음 20단어 시작" onPress={() => dispatch({ type: 'START_CARD', stage: state.checkedCount + 1 })} />
           )}
-          {/* ★ghost로 강등 — 성격이 정반대인 두 액션(새 학습 시작 vs 세션 종료)이 같은 무게였음 → accent/default/ghost 3단 위계 */}
-          <VPButton variant="ghost" full={false} style={{ flex: 1 }} label="홈으로" onPress={() => dispatch({ type: 'GO', screen: 'home' })} />
+          {/* ★홈으로 ghost→soft: 옆 버튼(테두리 有)과 나란히 있으니 ghost 텍스트가 버튼으로 안 보였음.
+              위계는 위의 accent '퀴즈로 점검하기'가 잡고, 하위 두 액션은 동일한 soft 버튼 쌍으로 통일 */}
+          <VPButton variant="soft" full={false} style={{ flex: 1 }} label="홈으로" onPress={() => dispatch({ type: 'GO', screen: 'home' })} />
         </View>
       </ProtoFooter>
     </View>

@@ -280,7 +280,7 @@ node vocapop-app/scripts/generate-domain-pack.js --domain dev --to 100
     <td align="center"><img src="docs/screenshots/onboarding-domain-2.png" width="230" alt="온보딩 · 도메인 선택"/><br/><sub><b>온보딩 ④</b><br/>분야 선택 → 실예문 프리뷰</sub></td>
   </tr>
   <tr>
-    <td align="center"><img src="docs/screenshots/home-4.png" width="230" alt="홈 · 계단 진도"/><br/><sub><b>홈</b><br/>여정 맥락 · StartHero · 배너 병합</sub></td>
+    <td align="center"><img src="docs/screenshots/home-5.png" width="230" alt="홈 · 계단 진도"/><br/><sub><b>홈</b><br/>여정 맥락 · StartHero · 배너 병합</sub></td>
     <td align="center"><img src="docs/screenshots/lesson-preview.png" width="230" alt="레슨 미리보기"/><br/><sub><b>레슨 미리보기</b><br/>새 단어/복습 그룹 · 전체 듣기</sub></td>
     <td align="center"><img src="docs/screenshots/flashcard-back-2.png" width="230" alt="플래시카드 뒷면"/><br/><sub><b>플래시카드</b><br/>뜻·예문 · 편향 없는 알아요/몰라요</sub></td>
   </tr>

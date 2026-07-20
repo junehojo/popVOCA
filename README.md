@@ -285,7 +285,7 @@ node vocapop-app/scripts/generate-domain-pack.js --domain dev --to 100
     <td align="center"><img src="docs/screenshots/flashcard-back-2.png" width="230" alt="플래시카드 뒷면"/><br/><sub><b>플래시카드</b><br/>뜻·예문 · 편향 없는 알아요/몰라요</sub></td>
   </tr>
   <tr>
-    <td align="center"><img src="docs/screenshots/complete.png" width="230" alt="걸음 완료"/><br/><sub><b>걸음 완료</b><br/>완료 연출 + 성과 카드</sub></td>
+    <td align="center"><img src="docs/screenshots/complete-2.png" width="230" alt="걸음 완료"/><br/><sub><b>걸음 완료</b><br/>완료 연출 + 성과 카드</sub></td>
     <td align="center"><img src="docs/screenshots/quiz.png" width="230" alt="퀴즈 문항"/><br/><sub><b>퀴즈 점검</b><br/>6유형 · 난이도 계단 배정</sub></td>
     <td align="center"><img src="docs/screenshots/quiz-feedback.png" width="230" alt="퀴즈 피드백"/><br/><sub><b>퀴즈 피드백</b><br/>예문·오답 해설 · ★저장</sub></td>
   </tr>

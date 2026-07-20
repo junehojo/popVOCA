@@ -261,9 +261,14 @@ export function CardDoneScreen({ state, dispatch }) {
   const relearnN = state.cardR2Initial || 0;   // 2R 드릴을 돈 단어 수 = '다시 봐서 외운' 수
   // ★+NP는 실제 적립액 — 세션 시작 스냅샷(cardPointsBase)과의 차. 라벨 계산으로 부풀리지 않는다
   const earned = Math.max(0, (state.points || 0) - (state.cardPointsBase || 0));
-  // ★종점 가드 — 마지막 걸음이면 '다음 걸음'이 없다. due 복습이 있으면 그 길을 soft로 안내
+  // ★종점 가드 — 마지막 걸음이면 '다음 걸음'이 없다. due 복습이 있으면 그 길을 안내
   const atEnd = stage >= TOTAL;
   const dueN = atEnd ? dueReviewIds(state.boxes, (state.sessionNo || 0) + 1, []).length : 0;
+  // ★하위 2액션 위계 — '전진'(다음 학습)이 '홈으로'(이탈)보다 중요:
+  //   전진 액션은 우측 + accentSoft(연핑크) 강조, 홈으로는 좌측 + soft(중립). 강도 사다리: accent > accentSoft > soft.
+  const forwardBtn = atEnd
+    ? (dueN > 0 ? <VPButton variant="accentSoft" full={false} style={{ flex: 1 }} label="복습으로 다지기" onPress={() => dispatch({ type: 'START_DUE_REVIEW' })} /> : null)
+    : <VPButton variant="accentSoft" full={false} style={{ flex: 1 }} label="다음 20단어 시작" onPress={() => dispatch({ type: 'START_CARD', stage: state.checkedCount + 1 })} />;
 
   // ★진입 연출 — 체크 스프링 + okSoft 확산 링 1회 + 스태거 페이드업.
   //   sfx·햅틱은 리듀서 finishCard가 이미 울렸으므로 여기선 시각 연출만 (중복 금지)
@@ -315,18 +320,10 @@ export function CardDoneScreen({ state, dispatch }) {
       </View>
       <ProtoFooter>
         <VPButton variant="accent" icon="pencil" label="퀴즈로 점검하기" onPress={() => dispatch({ type: 'START_QUIZ', stage })} />
+        {/* 홈으로(좌·중립) | 전진 액션(우·강조). 전진이 없으면(마지막 걸음+복습 0) 홈으로만 전체폭 */}
         <View style={{ flexDirection: 'row', gap: 10 }}>
-          {atEnd ? (
-            dueN > 0 ? (
-              <VPButton variant="soft" full={false} style={{ flex: 1 }} label="복습으로 다지기" onPress={() => dispatch({ type: 'START_DUE_REVIEW' })} />
-            ) : null
-          ) : (
-            /* ★'다음 걸음 체크'→'다음 20단어 시작' — 누르면 뭐가 되는지 그대로 말하는 라벨 */
-            <VPButton variant="soft" full={false} style={{ flex: 1 }} label="다음 20단어 시작" onPress={() => dispatch({ type: 'START_CARD', stage: state.checkedCount + 1 })} />
-          )}
-          {/* ★홈으로 ghost→soft: 옆 버튼(테두리 有)과 나란히 있으니 ghost 텍스트가 버튼으로 안 보였음.
-              위계는 위의 accent '퀴즈로 점검하기'가 잡고, 하위 두 액션은 동일한 soft 버튼 쌍으로 통일 */}
-          <VPButton variant="soft" full={false} style={{ flex: 1 }} label="홈으로" onPress={() => dispatch({ type: 'GO', screen: 'home' })} />
+          <VPButton variant="soft" full={!forwardBtn} style={forwardBtn ? { flex: 1 } : undefined} label="홈으로" onPress={() => dispatch({ type: 'GO', screen: 'home' })} />
+          {forwardBtn}
         </View>
       </ProtoFooter>
     </View>

@@ -408,5 +408,5 @@ cd android && ./gradlew :app:assembleRelease
 ---
 
 <div align="center">
-<sub>Designed and Developed by <a href="https://github.com/junehojo">junehojo</a></sub>
+<sub><a href="https://github.com/junehojo">junehojo</a></sub>
 </div>

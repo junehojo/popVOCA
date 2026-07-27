@@ -225,7 +225,7 @@ export default function Onboarding({ onDone }) {
               <BellIcon size={48} color={VP.accent} />
             </View>
             <Text textBreakStrategy="balanced" style={titleStyle}>하루를 놓쳐도 챙겨드릴게요</Text>
-            <Text textBreakStrategy="balanced" style={descStyle}>복습할 단어가 쌓이면 저녁 8시에 알려드려요. 시간은 설정에서 바꿀 수 있어요.</Text>
+            <Text textBreakStrategy="balanced" style={descStyle}>복습할 단어가 쌓이면 저녁 8시에 알려드려요. 시간은 마이에서 바꿀 수 있어요.</Text>
           </>
         )}
         {idx === 3 && (
@@ -234,7 +234,7 @@ export default function Onboarding({ onDone }) {
               <Icon name="book-open" size={48} color={VP.accent} />
             </View>
             <Text textBreakStrategy="balanced" style={titleStyle}>어떤 분야 문장으로{'\n'}배울까요?</Text>
-            <Text textBreakStrategy="balanced" style={descStyle}>예문과 빈칸 문제가 고른 분야의 문장으로 나와요. 설정에서 언제든 바꿀 수 있어요.</Text>
+            <Text textBreakStrategy="balanced" style={descStyle}>예문과 빈칸 문제가 고른 분야의 문장으로 나와요. 마이에서 언제든 바꿀 수 있어요.</Text>
             {/* ★gap 8→10, 칩은 48dp — 라디오 그룹 */}
             <View accessibilityRole="radiogroup" style={{ flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center', gap: 10, maxWidth: 320, marginTop: 20 }}>
               {DOMAINS.map((d) => (

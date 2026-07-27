@@ -19,7 +19,7 @@
 >
 > 전 화면을 프로덕트 디자인 크리틱 관점(UX·UI 문제 / 접근성 / 감정 곡선 / 정보 구조)으로 다시 뜯어보고,
 > 도출된 개선을 구현했습니다. 대비·접근성 토큰, 코어 학습 루프의 상태 버그·플로우 단절 수정,
-> 온보딩·홈·퀴즈·결과·단어장·통계·설정 화면 리디자인이 포함됩니다.
+> 온보딩·홈·퀴즈·결과·단어장·통계·마이 화면 리디자인이 포함됩니다.
 > 자세한 내용은 아래 [**v3에서 달라진 점**](#-v3에서-달라진-점) 섹션에 있습니다.
 >
 > **버전 계보** — v1 원본 [`Mainbackup`](https://github.com/junehojo/popVOCA/tree/Mainbackup) ·
@@ -68,7 +68,7 @@
 | **홈** | 신규 유저 '0% · 0일 · ★0' 콜드스타트 3연타 완화, **StartHero**(오늘 20단어 미리보기), 전체 여정 맥락(`N/132걸음`), 이어하기+복습 **배너 병합**, '체크→시작'·'퀴즈→복습' 라벨 정합 |
 | **단어장** | 걸음(20단어) **섹션 헤더 + 패스트 스크롤**, `#`번호(정렬 추론 불가) → **형광펜 강도 게이지**, 헷갈려요/익혔어요 **트리아지 3채널**(스와이프·롱프레스·상세) |
 | **통계** | 관리자 대시보드식(총량→진행) → **성취 우선 서사** — 자기효능감 카드 상단 승격, '평균 정답률' → '최근 정답률', 개발자 단위 7칸 → 의미 있는 3단계 |
-| **설정·로그인** | 순환 탭 컨트롤 → **선택 시트/세그먼트**, 위험 작업(초기화) 격리 + 파급 고지, 로그인 **신뢰 체인**(비밀번호 재설정·에러 한글화·약관·구글 브랜드 버튼) |
+| **마이·로그인** | 4번째 탭 `설정` → **`마이`**(내용이 이미 프로필+계정+학습옵션인 마이페이지였음 · 국내 앱 관례상 마지막 탭은 마이), 순환 탭 컨트롤 → **선택 시트/세그먼트**, 위험 작업(초기화) 격리 + 파급 고지, 로그인 **신뢰 체인**(비밀번호 재설정·에러 한글화·약관·구글 브랜드 버튼) |
 
 | 주요 변경 파일 | 내용 |
 |--------------|------|
@@ -78,7 +78,7 @@
 | `Onboarding.js` | 4스텝 재구성 + 제품 목업 + 스와이프/백 |
 | `Home.js` `Flashcard.js` `Quiz.js` `Result.js` `Wordbook.js` `WordDetail.js` `Stats.js` `Settings.js` `Auth.js` `data.js` `Icon.js` | 화면별 리디자인 (위 표) |
 
-> 전 플로우(온보딩→홈→카드→퀴즈→재도전→결과→단어장→통계→설정)를 웹 프리뷰 자동화로 실주행 검증했습니다. 잠금화면·공유 수집 등 네이티브 기능은 코드에 가드가 있으나 실기기 빌드 검증이 필요합니다.
+> 전 플로우(온보딩→홈→카드→퀴즈→재도전→결과→단어장→통계→마이)를 웹 프리뷰 자동화로 실주행 검증했습니다. 잠금화면·공유 수집 등 네이티브 기능은 코드에 가드가 있으나 실기기 빌드 검증이 필요합니다.
 
 ---
 
@@ -280,7 +280,7 @@ node vocapop-app/scripts/generate-domain-pack.js --domain dev --to 100
     <td align="center"><img src="docs/screenshots/onboarding-domain-2.png" width="230" alt="온보딩 · 도메인 선택"/><br/><sub><b>온보딩 ④</b><br/>분야 선택 → 실예문 프리뷰</sub></td>
   </tr>
   <tr>
-    <td align="center"><img src="docs/screenshots/home-5.png" width="230" alt="홈 · 계단 진도"/><br/><sub><b>홈</b><br/>여정 맥락 · StartHero · 배너 병합</sub></td>
+    <td align="center"><img src="docs/screenshots/home-6.png" width="230" alt="홈 · 계단 진도"/><br/><sub><b>홈</b><br/>여정 맥락 · StartHero · 배너 병합</sub></td>
     <td align="center"><img src="docs/screenshots/lesson-preview.png" width="230" alt="레슨 미리보기"/><br/><sub><b>레슨 미리보기</b><br/>새 단어/복습 그룹 · 전체 듣기</sub></td>
     <td align="center"><img src="docs/screenshots/flashcard-back-2.png" width="230" alt="플래시카드 뒷면"/><br/><sub><b>플래시카드</b><br/>뜻·예문 · 편향 없는 알아요/몰라요</sub></td>
   </tr>
@@ -292,12 +292,12 @@ node vocapop-app/scripts/generate-domain-pack.js --domain dev --to 100
   <tr>
     <td align="center"><img src="docs/screenshots/quiz-retry.png" width="230" alt="오답 재도전 인터스티셜"/><br/><sub><b>오답 재도전</b><br/>예고 화면 → 틀린 것만 다시</sub></td>
     <td align="center"><img src="docs/screenshots/quiz-result-2.png" width="230" alt="퀴즈 결과"/><br/><sub><b>퀴즈 결과</b><br/>오답 리스트 · 정확한 포인트</sub></td>
-    <td align="center"><img src="docs/screenshots/stats.png" width="230" alt="통계"/><br/><sub><b>통계</b><br/>성취 우선 재배열 · 최근 정답률</sub></td>
+    <td align="center"><img src="docs/screenshots/stats-2.png" width="230" alt="통계"/><br/><sub><b>통계</b><br/>성취 우선 재배열 · 최근 정답률</sub></td>
   </tr>
   <tr>
-    <td align="center"><img src="docs/screenshots/wordbook.png" width="230" alt="단어장"/><br/><sub><b>단어장</b><br/>걸음 섹션 · 형광펜 강도 게이지</sub></td>
+    <td align="center"><img src="docs/screenshots/wordbook-2.png" width="230" alt="단어장"/><br/><sub><b>단어장</b><br/>걸음 섹션 · 형광펜 강도 게이지</sub></td>
     <td align="center"><img src="docs/screenshots/worddetail.png" width="230" alt="단어 상세"/><br/><sub><b>단어 상세</b><br/>뜻·예문 · 헷갈려요/즐겨찾기</sub></td>
-    <td align="center"><img src="docs/screenshots/settings.png" width="230" alt="설정"/><br/><sub><b>설정</b><br/>선택 시트 · 위험작업 격리</sub></td>
+    <td align="center"><img src="docs/screenshots/settings-2.png" width="230" alt="마이"/><br/><sub><b>마이</b><br/>선택 시트 · 위험작업 격리</sub></td>
   </tr>
   <tr>
     <td align="center"><img src="docs/screenshots/auth-login.png" width="230" alt="로그인"/><br/><sub><b>로그인</b><br/>신뢰 체인 · 비밀번호 찾기·약관</sub></td>

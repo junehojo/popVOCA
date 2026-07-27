@@ -276,7 +276,9 @@ const TABS = [
   { key: 'home', icon: 'mountain', label: '홈' },
   { key: 'vocab', icon: 'wordbook', label: '단어장' },
   { key: 'stats', icon: 'chart', label: '통계' },
-  { key: 'settings', icon: 'settings', label: '설정' },
+  /* ★'설정'→'마이': 이 탭은 프로필 카드로 시작하는 마이페이지(계정·학습옵션·화면)인데 간판만 설정이었음.
+     국내 앱 관례상 마지막 탭은 마이/전체이고 설정은 그 안에 든다 — 라벨·아이콘을 내용에 맞춤 */
+  { key: 'settings', icon: 'user', label: '마이' },
 ];
 export function TabBar({ active, dispatch }) {
   return (

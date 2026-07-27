@@ -15,16 +15,50 @@
 
 ---
 
-> ## 🆕 v3 — 디자인 시스템 · 코어 플로우 전면 개선
+> ## 🆕 v4 — 2차 크리틱: 데이터 손실 · 도달 불가 결함 수정
 >
-> 전 화면을 프로덕트 디자인 크리틱 관점(UX·UI 문제 / 접근성 / 감정 곡선 / 정보 구조)으로 다시 뜯어보고,
-> 도출된 개선을 구현했습니다. 대비·접근성 토큰, 코어 학습 루프의 상태 버그·플로우 단절 수정,
-> 온보딩·홈·퀴즈·결과·단어장·통계·마이 화면 리디자인이 포함됩니다.
-> 자세한 내용은 아래 [**v3에서 달라진 점**](#-v3에서-달라진-점) 섹션에 있습니다.
+> v3를 다시 크리틱에 올려, **말로만 고쳤다고 적었던 것들**과 **v3가 고치다 만든 회귀**를 잡았습니다.
+> 학습 기록이 사라지는 경로 3개, 화면이 죽는 소프트락, 눌러도 안 보이는 버튼,
+> 짧은 기기에서 아예 도달할 수 없던 오답 리스트가 포함됩니다.
+> 모든 수정은 헤드리스 브라우저에서 **재현 → 수정 → 재확인** 순으로 검증했고, 대비는 실측값을 적었습니다.
+> 자세한 내용은 아래 [**v4에서 달라진 점**](#-v4에서-달라진-점) 섹션에 있습니다.
 >
 > **버전 계보** — v1 원본 [`Mainbackup`](https://github.com/junehojo/popVOCA/tree/Mainbackup) ·
-> v2(학습과학 루프) [`v2`](https://github.com/junehojo/popVOCA/tree/v2) · **v3(현재, 디자인 고도화)**.
-> v2에서 무엇이 들어왔는지는 아래 [**v2 — 학습과학 기반 학습 루프**](#-v2--학습과학-기반-학습-루프-v1-대비) 섹션에 그대로 남겨 두었습니다.
+> v2(학습과학 루프) [`v2`](https://github.com/junehojo/popVOCA/tree/v2) ·
+> v3(디자인 고도화) [`v3`](https://github.com/junehojo/popVOCA/tree/v3) · **v4(현재, 결함 수정)**.
+> v3·v2에서 무엇이 들어왔는지는 아래 [**v3에서 달라진 점**](#-v3에서-달라진-점) ·
+> [**v2 — 학습과학 기반 학습 루프**](#-v2--학습과학-기반-학습-루프-v1-대비) 섹션에 그대로 남겨 두었습니다.
+
+## 🩹 v4에서 달라진 점
+
+### ① 학습 기록이 사라지는 경로 (P0)
+
+| 결함 | 무슨 일이 벌어졌나 | 수정 |
+|------|------------------|------|
+| **홈에서 진행 중 세션이 조용히 파괴** | 이어하기 배너가 떠 있어도 계단·히어로·팝오버·복습 배너를 누르면 `START_CARD`/`START_QUIZ`/`START_DUE_REVIEW`가 `pausedScreen`을 지워, 경고 한 번 없이 풀던 내용이 사라짐 | 새 세션을 여는 진입점 4곳을 가드로 묶고 확인 시트를 먼저 띄움. 기본 액션은 **이어하기**(accent), 파괴적 액션은 **새로 시작**(soft) |
+| **로그인 시 클라우드 기록 덮어쓰기** | pull/merge 실패를 *테이블 누락일 때만* 해제하고 있어서, 네트워크 오류로 실패하면 병합되지 않은 빈 로컬이 2초 뒤 클라우드 기록을 upsert로 덮음. 새 기기 첫 로그인 + 일시적 실패 = 전손 | 실패 원인과 무관하게 항상 해제 |
+| **되돌리기 기록이 저장되지 않음** | `cardHistory`가 세션 저장 목록에서 빠져 있어, 앱을 껐다 켜고 이어하면 8/20 카드에서도 '답 정정'이 조용히 죽어 있었음 | 세션과 함께 저장(최근 40개 상한). 되돌림이 건드리는 값은 모두 이미 영속이라 히스토리만 추가하면 성립 |
+
+### ② 화면이 죽거나 안 보이던 것
+
+| 결함 | 원인 | 수정 |
+|------|------|------|
+| **퀴즈 소프트락** | 2R 잔여 1개를 또 틀리면 재삽입 결과가 같은 배열이라 `word.id`가 안 바뀜 → 리셋 effect가 전부 `[word.id]` 의존이라 피드백 시트가 안 풀리고 '다음'이 먹통. 세션 종료 외 탈출구 없음 | `quizNonce`를 문항 전환마다 올려 `id:nonce`를 remount 키로. 4유형의 내부 상태가 한 번에 초기화되고 진입 애니메이션도 재생 |
+| **다크모드에서 버튼 라벨 실종** | primary 버튼 배경이 `VP.text`인데 다크에선 그게 `#ECEFF6`(거의 흰색) — 흰 라벨이 **1.15:1** | 다크에선 라벨을 어두운 잉크로 뒤집어 **16.5:1**(실측). 플래시카드 '뜻 보기'는 세션당 가장 많이 누르는 버튼 |
+| **통계 → 즐겨찾기 딥링크가 죽어 있음** | 통계가 `vocabView:'fav'`를 보내는데 단어장에 수신부가 없어 전체 목록으로 떨어짐 (송신부만 있던 반쪽 구현) | 수신부 추가 |
+
+### ③ v3가 고치다 만든 회귀
+
+| 결함 | 무슨 일이 벌어졌나 | 수정 |
+|------|------------------|------|
+| **플래시카드 1번 카드의 66px 구멍** | v3가 버튼 점프를 없애려고 고정 슬롯을 넣었는데 빈 상태를 처리하지 않아, 첫 카드 푸터 왼쪽에 구멍이 뚫린 채 '뜻 보기'만 오른쪽으로 밀려 고장난 것처럼 보임 | 되돌리기 버튼을 항상 렌더하고 비활성만. 구멍도 점프도 없고, 기능이 있다는 걸 첫 카드에서 알게 됨 |
+| **비활성 처리가 버튼을 통째로 지움** | RN `opacity`는 서브트리를 합성하므로 컨테이너에 걸면 배경·테두리까지 옅어짐 — 실측 **테두리 1.06:1 / 화살표 1.70:1**로 사실상 소멸. 구멍이 사라진 게 아니라 옅어진 것 | 컨테이너는 불투명하게 두고 화살표만 감쇠 → 라이트 **2.93:1** / 다크 **4.17:1** (활성은 4.66 / 6.29) |
+| **결과 오답 리스트가 짧은 기기에서 도달 불가** | '4행 초과면 스크롤'이라는 고정 임계값이 기기 높이를 보지 않아, 375×667·오답 4개에서 스크롤 컨테이너가 안 붙고 3·4번째 행이 푸터 뒤와 화면 밖으로 밀림 (실측: 푸터 521 / 3행 560~579 / 4행 624~669) | 항상 스크롤 컨테이너 + `flexShrink`로 남은 공간에 맞춤. 넘치는지 실측해 그때만 하단 페이드 |
+| **만점일 때 하단이 텅 빔** | 오답 리스트를 넣으려 수직 중앙을 상단 앵커로 바꿨는데, 오답 0개면 리스트가 사라져 250pt 넘게 남음. 가장 축하해야 할 화면이 가장 허전해지는 역전 | 리스트가 없을 때만 수직 중앙으로 |
+| **단어장 게이지 슬롯 과대** | 막대 3개는 18px인데 슬롯이 40px이라 모든 행에 빈 거터가 남아 지표와 단어가 따로 읽힘 | 18px로 줄이고 행 gap 6→12 (형광펜이 글자 x를 고정하려 `marginLeft:-5`로 삐져나와 6이면 1px까지 붙음) |
+
+> **검증 방식** — 각 항목을 헤드리스 브라우저에서 먼저 **재현**하고(위 실측값이 그때 나온 숫자입니다),
+> 수정 후 같은 시나리오로 다시 확인했습니다. 대비는 팔레트 hex에서 합성색을 계산해 대조했습니다.
 
 ## 🎨 v3에서 달라진 점
 
@@ -35,7 +69,7 @@
 | 문제 | 개선 |
 |------|------|
 | 브랜드 핑크 `#FF5BB8` 위 흰 CTA 글자 = 약 **2.8:1** (WCAG AA 미달) | CTA 배경을 `#E83FA1`로 — **3.7:1** 확보 (`cta` 토큰) |
-| 안내·인터랙티브 텍스트에 `textMute`(약 **1.6:1**) 사용 — "탭해서 뒤집기"·"몰라요"·힌트가 사실상 비가시 | 안내/탭 가능 텍스트는 `textSub`(**4.9:1**), 의도적 저강조 장식만 신설 `textFaint`(3:1) |
+| 안내·인터랙티브 텍스트에 `textMute`(약 **1.6:1**) 사용 — "탭해서 뒤집기"·"몰라요"·힌트가 사실상 비가시 | 안내/탭 가능 텍스트는 `textSub`(**4.9:1**), 의도적 저강조 장식만 신설 `textFaint` |<br/><sub>※ v4 정정: `textFaint`는 목표 3:1로 적었지만 실측 **2.1:1**입니다. 장식 전용이라 정보 전달에는 쓰지 않지만, 목표 미달로 남아 있는 과제입니다.</sub>
 | 배지·칩의 accentSoft 배경 위 핑크 글자 = 약 **2.3:1** | `accentAA`(#C2247E) 토큰으로 대비 확보 |
 | 터치 타깃 37~40px 다수 (도메인 칩·몰라요·타일 슬롯·★) | 최소 **44px**(hitSlop 포함) 일괄 상향 |
 | 모션 강제 · 스크린리더 미대응 | `useReducedMotion` 분기, 인터랙티브 요소에 role/label/state, 뒤집히지 않은 카드 면 스크린리더에서 숨김 |
@@ -275,38 +309,44 @@ node vocapop-app/scripts/generate-domain-pack.js --domain dev --to 100
 
 <table>
   <tr>
-    <td align="center"><img src="docs/screenshots/onboarding-2.png" width="230" alt="온보딩 · 메커니즘"/><br/><sub><b>온보딩 ①</b><br/>제품 목업으로 계단·형광펜 소개</sub></td>
-    <td align="center"><img src="docs/screenshots/onboarding-lock-2.png" width="230" alt="온보딩 · 잠금화면"/><br/><sub><b>온보딩 ②</b><br/>잠금화면 학습 · 그 자리에서 켜기</sub></td>
-    <td align="center"><img src="docs/screenshots/onboarding-domain-2.png" width="230" alt="온보딩 · 도메인 선택"/><br/><sub><b>온보딩 ④</b><br/>분야 선택 → 실예문 프리뷰</sub></td>
+    <td align="center"><img src="docs/screenshots/onboarding-1-v4.png" width="230" alt="온보딩 · 메커니즘"/><br/><sub><b>온보딩 ①</b><br/>제품 목업으로 계단·형광펜 소개</sub></td>
+    <td align="center"><img src="docs/screenshots/onboarding-lock-v4.png" width="230" alt="온보딩 · 잠금화면"/><br/><sub><b>온보딩 ②</b><br/>잠금화면 학습 · 그 자리에서 켜기</sub></td>
+    <td align="center"><img src="docs/screenshots/onboarding-noti-v4.png" width="230" alt="온보딩 · 알림"/><br/><sub><b>온보딩 ③</b><br/>알림 권한을 약속과 같은 화면에서</sub></td>
   </tr>
   <tr>
-    <td align="center"><img src="docs/screenshots/home-6.png" width="230" alt="홈 · 계단 진도"/><br/><sub><b>홈</b><br/>여정 맥락 · StartHero · 배너 병합</sub></td>
-    <td align="center"><img src="docs/screenshots/lesson-preview-2.png" width="230" alt="레슨 미리보기"/><br/><sub><b>레슨 미리보기</b><br/>새 단어/복습 그룹 · 전체 듣기</sub></td>
-    <td align="center"><img src="docs/screenshots/flashcard-back-2.png" width="230" alt="플래시카드 뒷면"/><br/><sub><b>플래시카드</b><br/>뜻·예문 · 편향 없는 알아요/몰라요</sub></td>
+    <td align="center"><img src="docs/screenshots/onboarding-domain-v4.png" width="230" alt="온보딩 · 도메인 선택"/><br/><sub><b>온보딩 ④</b><br/>분야 선택 → 실예문 프리뷰</sub></td>
+    <td align="center"><img src="docs/screenshots/home-v4.png" width="230" alt="홈 · 계단 진도"/><br/><sub><b>홈</b><br/>여정 맥락 · 계단 진도 · 복습 배너</sub></td>
+    <td align="center"><img src="docs/screenshots/home-resume-guard-v4.png" width="230" alt="진행 중 세션 보호 시트"/><br/><sub><b>🩹 세션 보호 <sup>v4</sup></b><br/>경고 없이 사라지던 진행을 확인 시트로</sub></td>
   </tr>
   <tr>
-    <td align="center"><img src="docs/screenshots/complete-3.png" width="230" alt="걸음 완료"/><br/><sub><b>걸음 완료</b><br/>완료 연출 + 성과 카드</sub></td>
-    <td align="center"><img src="docs/screenshots/quiz.png" width="230" alt="퀴즈 문항"/><br/><sub><b>퀴즈 점검</b><br/>6유형 · 난이도 계단 배정</sub></td>
-    <td align="center"><img src="docs/screenshots/quiz-feedback.png" width="230" alt="퀴즈 피드백"/><br/><sub><b>퀴즈 피드백</b><br/>예문·오답 해설 · ★저장</sub></td>
+    <td align="center"><img src="docs/screenshots/lesson-preview-v4.png" width="230" alt="레슨 미리보기"/><br/><sub><b>레슨 미리보기</b><br/>새 단어/복습 그룹 · 전체 듣기</sub></td>
+    <td align="center"><img src="docs/screenshots/flashcard-front-v4.png" width="230" alt="플래시카드 앞면 · 1번 카드"/><br/><sub><b>🩹 플래시카드 (앞) <sup>v4</sup></b><br/>1번 카드의 66px 구멍 → 비활성 되돌리기</sub></td>
+    <td align="center"><img src="docs/screenshots/flashcard-back-v4.png" width="230" alt="플래시카드 뒷면"/><br/><sub><b>플래시카드 (뒤)</b><br/>뜻·예문 · 편향 없는 알아요/몰라요</sub></td>
   </tr>
   <tr>
-    <td align="center"><img src="docs/screenshots/quiz-retry.png" width="230" alt="오답 재도전 인터스티셜"/><br/><sub><b>오답 재도전</b><br/>예고 화면 → 틀린 것만 다시</sub></td>
-    <td align="center"><img src="docs/screenshots/quiz-result-3.png" width="230" alt="퀴즈 결과"/><br/><sub><b>퀴즈 결과</b><br/>오답 리스트 · 정확한 포인트</sub></td>
-    <td align="center"><img src="docs/screenshots/stats-3.png" width="230" alt="통계"/><br/><sub><b>통계</b><br/>성취 우선 재배열 · 최근 정답률</sub></td>
+    <td align="center"><img src="docs/screenshots/flashcard-dark-v4.png" width="230" alt="플래시카드 다크모드"/><br/><sub><b>🩹 다크모드 <sup>v4</sup></b><br/>'뜻 보기' 라벨 1.15:1 → 16.5:1</sub></td>
+    <td align="center"><img src="docs/screenshots/complete-v4.png" width="230" alt="걸음 완료"/><br/><sub><b>걸음 완료</b><br/>완료 연출 + 성과 카드</sub></td>
+    <td align="center"><img src="docs/screenshots/quiz-v4.png" width="230" alt="퀴즈 문항"/><br/><sub><b>퀴즈 점검</b><br/>6유형 · 난이도 계단 배정</sub></td>
   </tr>
   <tr>
-    <td align="center"><img src="docs/screenshots/wordbook-2.png" width="230" alt="단어장"/><br/><sub><b>단어장</b><br/>걸음 섹션 · 형광펜 강도 게이지</sub></td>
-    <td align="center"><img src="docs/screenshots/worddetail.png" width="230" alt="단어 상세"/><br/><sub><b>단어 상세</b><br/>뜻·예문 · 헷갈려요/즐겨찾기</sub></td>
-    <td align="center"><img src="docs/screenshots/settings-2.png" width="230" alt="마이"/><br/><sub><b>마이</b><br/>선택 시트 · 위험작업 격리</sub></td>
+    <td align="center"><img src="docs/screenshots/quiz-feedback-v4.png" width="230" alt="퀴즈 피드백"/><br/><sub><b>퀴즈 피드백</b><br/>예문·오답 해설 · ★저장</sub></td>
+    <td align="center"><img src="docs/screenshots/quiz-retry-v4.png" width="230" alt="오답 재도전 인터스티셜"/><br/><sub><b>오답 재도전</b><br/>예고 화면 → 틀린 것만 다시</sub></td>
+    <td align="center"><img src="docs/screenshots/quiz-result-v4.png" width="230" alt="퀴즈 결과 · 오답 리스트"/><br/><sub><b>🩹 퀴즈 결과 <sup>v4</sup></b><br/>짧은 기기에서 도달 불가였던 리스트</sub></td>
   </tr>
   <tr>
-    <td align="center"><img src="docs/screenshots/auth-login.png" width="230" alt="로그인"/><br/><sub><b>로그인</b><br/>신뢰 체인 · 비밀번호 찾기·약관</sub></td>
-    <td align="center"><img src="docs/screenshots/flashcard-front-2.png" width="230" alt="플래시카드 앞면"/><br/><sub><b>플래시카드 (앞)</b><br/>단어 · 발음 · TTS</sub></td>
-    <td align="center"><img src="docs/screenshots/onboarding-noti-2.png" width="230" alt="온보딩 · 알림"/><br/><sub><b>온보딩 ③</b><br/>알림 권한을 약속과 같은 화면에서</sub></td>
+    <td align="center"><img src="docs/screenshots/quiz-result-perfect-v4.png" width="230" alt="퀴즈 결과 · 만점"/><br/><sub><b>🩹 만점 결과 <sup>v4</sup></b><br/>하단 250pt 공백 → 수직 중앙</sub></td>
+    <td align="center"><img src="docs/screenshots/stats-v4.png" width="230" alt="통계"/><br/><sub><b>통계</b><br/>성취 우선 재배열 · 최근 정답률</sub></td>
+    <td align="center"><img src="docs/screenshots/wordbook-v4.png" width="230" alt="단어장"/><br/><sub><b>🩹 단어장 <sup>v4</sup></b><br/>게이지 슬롯 40→18px · 지표와 단어 밀착</sub></td>
+  </tr>
+  <tr>
+    <td align="center"><img src="docs/screenshots/worddetail-v4.png" width="230" alt="단어 상세"/><br/><sub><b>단어 상세</b><br/>뜻·예문 · 헷갈려요/즐겨찾기</sub></td>
+    <td align="center"><img src="docs/screenshots/settings-v4.png" width="230" alt="마이"/><br/><sub><b>마이</b><br/>선택 시트 · 위험작업 격리</sub></td>
+    <td align="center"><img src="docs/screenshots/auth-login-v4.png" width="230" alt="로그인"/><br/><sub><b>로그인</b><br/>신뢰 체인 · 비밀번호 찾기·약관</sub></td>
   </tr>
 </table>
 
-<sub>웹 미리보기 화면 캡처 (v3) — 안드로이드 빌드 시 오버레이 · 잠금화면 기능이 추가됩니다</sub>
+<sub>웹 미리보기 화면 캡처 (v4, 780×1688) — 🩹 표시는 v4에서 수정된 화면입니다.
+안드로이드 빌드 시 오버레이 · 잠금화면 기능이 추가됩니다</sub>
 
 </div>
 
@@ -403,7 +443,13 @@ cd android && ./gradlew :app:assembleRelease
 
 동작·배포 완료 (**v18 / versionCode 18**). 박스형 SRS · 6유형 퀴즈 · 잠금화면 학습 · 플로팅 오버레이 · 복습 알림 · 세션 저장·이어하기 · Supabase 클라우드 동기화 구현됨.
 
-**v3(현재 브랜치)** — 위 [v3에서 달라진 점](#-v3에서-달라진-점)의 디자인·접근성·플로우 개선을 반영. 웹 프리뷰 자동화로 전 플로우 실주행 검증 완료, 네이티브 기능(오버레이·잠금·공유 수집)은 실기기 빌드 검증 대기.
+**v4(현재 브랜치)** — 위 [v4에서 달라진 점](#-v4에서-달라진-점)의 결함 수정을 반영. v3의 디자인·접근성·플로우 개선은 그대로 유지됩니다.
+웹 프리뷰 자동화로 각 결함을 재현·수정·재확인했고, 스크린샷 21장도 같은 하네스로 재캡처했습니다.
+네이티브 기능(오버레이·잠금·공유 수집)은 실기기 빌드 검증 대기입니다.
+
+**아직 남은 것** — 로그인 덮어쓰기 수정은 코드 경로 검토로 확인했고 실기기에서 네트워크를 끊는 재현은 하지 않았습니다.
+`textFaint` 토큰은 목표 3:1에 못 미치는 2.1:1로 남아 있습니다.
+다크 팔레트의 `surface2`·`border`는 배경 대비 1.2~1.4:1이라 카드·버튼의 면 경계가 약합니다.
 
 ---
 

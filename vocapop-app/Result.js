@@ -129,7 +129,7 @@ export function ResultScore({ state, dispatch }) {
   // ★판정 카피를 전진 프레임으로 — '연습 더 해요'류 하향 판정 대신 다음 행동을 가리키는 문장
   const title = acc === 100 ? '완벽해요!'
     : acc >= 80 ? '훌륭해요'
-    : acc >= 60 ? `${acc}% — ${wrong}개만 더 잡으면 돼요`
+    : acc >= 60 ? `${wrong}개만 더 잡으면 돼요`
     : '다시 만나면 이길 수 있어요';
 
   const reduced = useReducedMotion();
@@ -171,7 +171,7 @@ export function ResultScore({ state, dispatch }) {
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 12, paddingVertical: 6, borderRadius: 999, backgroundColor: VP.okSoft }}>
                 <Icon name="check-bold" size={13} color={VP.okDeep} />
                 {/* ★'다시 풀어 전부 해결!'→망각곡선 다음 스텝을 가리키는 카피 — 성취를 내일 복습으로 연결 */}
-                <Text style={{ flexShrink: 1, textAlign: 'center', fontSize: 13, fontFamily: ff(700), color: VP.okDeep }}>재도전으로 {state.quizRetryInitial}개 전부 해결 — 내일 복습에서 굳혀요</Text>
+                <Text style={{ flexShrink: 1, textAlign: 'center', fontSize: 13, fontFamily: ff(700), color: VP.okDeep }}>재도전으로 {state.quizRetryInitial}개 전부 해결 · 내일 복습에서 굳혀요</Text>
               </View>
             ) : null}
           </View>

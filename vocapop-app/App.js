@@ -571,7 +571,7 @@ export default function App() {
         setSyncMsg('동기화됨 · 방금');
       } catch (e) {
         const miss = e && (e.code === '42P01' || /does not exist/.test(e.message || ''));
-        setSyncMsg(miss ? '테이블이 없어요 — SQL 실행 필요' : '동기화 실패');
+        setSyncMsg(miss ? '테이블이 없어요 · SQL 실행 필요' : '동기화 실패');
         if (miss) syncedFor.current = null;
       }
     })();

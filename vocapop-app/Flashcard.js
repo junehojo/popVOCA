@@ -80,21 +80,29 @@ export function FlashcardScreen({ state, dispatch, onOverlay }) {
     dispatch({ type: 'CARD_ANSWER', id: word.id, choice });
   };
   const overlayBtn = Overlay.isSupported() && onOverlay ? () => onOverlay(state.activeStage, true) : undefined;
-  // R1에서 한 장이라도 답했으면 '이전 카드'로 정정 가능 (R2 드릴은 큐가 섞여 이전 개념 없음)
-  const canPrev = !isR2 && state.cardIdx > 0 && (state.cardHistory || []).length > 0;
-  const prevBtn = canPrev ? (
-    <Pressable onPress={() => { hTap(); dispatch({ type: 'CARD_PREV' }); }} hitSlop={6}
+  // 한 장이라도 답했으면 '이전 카드'로 돌아가 답 정정 가능
+  const canPrev = state.cardIdx > 0 && (state.cardHistory || []).length > 0;
+  /* ★1번 카드에도 버튼을 그대로 두고 비활성만 한다.
+     예전엔 canPrev가 false면 버튼을 null로 만들고 56px 투명 슬롯만 남겼는데, 그 결과 첫 카드
+     푸터 왼쪽에 66px(56+gap10) 구멍이 뚫린 채 '뜻 보기'만 오른쪽으로 밀려 고장난 것처럼 보였다.
+     비활성 버튼으로 채우면 구멍도 없고 좌표도 안 흔들리며, 되돌리기가 있다는 걸 첫 카드에서 미리 알게 된다.
+     WordDetail 이전/다음 화살표와 같은 처리(disabled + opacity 0.4). */
+  const prevBtn = (
+    <Pressable disabled={!canPrev} onPress={() => { hTap(); dispatch({ type: 'CARD_PREV' }); }} hitSlop={6}
       accessibilityRole="button" accessibilityLabel="이전 카드로 돌아가 답 정정"
+      accessibilityState={{ disabled: !canPrev }}
       style={{
         width: 56, height: 56, borderRadius: 16, backgroundColor: VP.surface2,
         borderWidth: 1.5, borderColor: VP.border, alignItems: 'center', justifyContent: 'center',
+        opacity: canPrev ? 1 : 0.4,
       }}>
       <Icon name="arrow-left" size={20} color={VP.textSub} />
     </Pressable>
-  ) : null;
-  // ★푸터 고정 그리드 [56][flex1][flex1] — prevBtn이 없어도 56px 투명 슬롯 유지.
-  //   카드마다 '알아요' 좌표가 흔들리면 반복 탭 리듬이 깨진다(좌표 기억 기반 조작).
-  const slot56 = prevBtn || <View style={{ width: 56 }} />;
+  );
+  /* ★푸터 고정 그리드 [56][flex1][flex1] — 카드마다 '알아요' 좌표가 흔들리면 반복 탭 리듬이 깨진다.
+     단 R2 드릴은 큐가 섞여 '이전' 개념 자체가 없으므로 슬롯을 아예 뺀다 — 라운드 내내 죽어 있을
+     버튼이 자리만 차지할 이유가 없고, R1↔R2 사이엔 걸음 정리 화면이 끼어 좌표 기억은 어차피 끊긴다. */
+  const slot56 = isR2 ? null : prevBtn;
 
   return (
     <View style={{ flex: 1, backgroundColor: VP.bg }}>

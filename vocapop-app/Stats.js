@@ -181,12 +181,16 @@ export default function Stats({ state, dispatch }) {
               } : null} />
           </View>
 
-          {/* ② 다시 만나 이긴 단어 — 자기효능감 카드 ★최상단 승격 + 상시 표시(빈 상태 포함).
-              '아직 없음'도 숨기지 않고 어떻게 쌓이는지 알려주는 게 동기 설계상 낫다. */}
-          <SectionCard title="다시 만나 이긴 단어" right={redeemedCount > 0 ? `${redeemedCount}개` : ''}>
+          {/* ② 다시 만나서 맞힌 단어 — 자기효능감 카드 ★최상단 승격 + 상시 표시(빈 상태 포함).
+              '아직 없음'도 숨기지 않고 어떻게 쌓이는지 알려주는 게 동기 설계상 낫다.
+              ★제목 '이긴'→'맞힌': '단어를 이기다'는 비관용 연어(이기다의 목적어는 상대·경기·나를 누르는 상태)라
+                관형절이 '단어가 이겼다'로 먼저 읽혔음. '맞히다'는 앱 표준 어휘라 주체가 사용자로 바로 고정된다.
+              ★'만나'→'만나서': '만나+아' 축약형이 어간과 형태가 같아 파싱이 유예되던 걸림 제거(+모음 충돌 해소).
+              ★서브: 우측 배지와 중복되던 개수 삭제, 생략 주어를 '나'로 통일, '—'(한국 앱에 드문 기호)→마침표 두 문장. */}
+          <SectionCard title="다시 만나서 맞힌 단어" right={redeemedCount > 0 ? `${redeemedCount}개` : ''}>
             {redeemedCount > 0 ? (
               <Text style={{ fontSize: 13, color: VP.textSub, lineHeight: 19 }}>
-                처음엔 틀렸지만 지금은 맞히는 단어가 <Text style={{ fontFamily: ff(700), color: VP.okDeep }}>{redeemedCount}개</Text> — 다시 만나면 이겨요.
+                처음엔 틀렸지만 지금은 맞혀요. 다시 만나면 이겨요.
               </Text>
             ) : (
               <Text style={{ fontSize: 13, color: VP.textSub, lineHeight: 19 }}>퀴즈에서 틀린 단어를 다시 맞히면 여기 쌓여요.</Text>

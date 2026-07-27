@@ -292,7 +292,7 @@ node vocapop-app/scripts/generate-domain-pack.js --domain dev --to 100
   <tr>
     <td align="center"><img src="docs/screenshots/quiz-retry.png" width="230" alt="오답 재도전 인터스티셜"/><br/><sub><b>오답 재도전</b><br/>예고 화면 → 틀린 것만 다시</sub></td>
     <td align="center"><img src="docs/screenshots/quiz-result-2.png" width="230" alt="퀴즈 결과"/><br/><sub><b>퀴즈 결과</b><br/>오답 리스트 · 정확한 포인트</sub></td>
-    <td align="center"><img src="docs/screenshots/stats-2.png" width="230" alt="통계"/><br/><sub><b>통계</b><br/>성취 우선 재배열 · 최근 정답률</sub></td>
+    <td align="center"><img src="docs/screenshots/stats-3.png" width="230" alt="통계"/><br/><sub><b>통계</b><br/>성취 우선 재배열 · 최근 정답률</sub></td>
   </tr>
   <tr>
     <td align="center"><img src="docs/screenshots/wordbook-2.png" width="230" alt="단어장"/><br/><sub><b>단어장</b><br/>걸음 섹션 · 형광펜 강도 게이지</sub></td>

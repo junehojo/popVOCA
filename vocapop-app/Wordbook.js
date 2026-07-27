@@ -281,7 +281,10 @@ function WbTutorial({ onClose }) {
 }
 
 export default function Wordbook({ state, dispatch }) {
-  const [filter, setFilter] = useState(state.vocabView === 'mine' ? 'mine' : 'all'); // all | fav | mine(공유로 수집)
+  /* ★P0: 'fav' 수신부가 없어 통계 '즐겨찾기 N개' 딥링크(Stats.js가 vocabView:'fav' 전송)가
+     전체 목록으로 떨어지고 있었다 — 송신부만 있고 수신부가 없던 반쪽 구현 */
+  const [filter, setFilter] = useState(
+    state.vocabView === 'mine' ? 'mine' : state.vocabView === 'fav' ? 'fav' : 'all'); // all | fav | mine(공유로 수집)
   const [query, setQuery] = useState('');
   const [view, setView] = useState(state.vocabView === 'confusing' ? 'confusing' : 'list');   // list | confusing(헷갈리는 덱) — 통계 딥링크 지원
   const [detail, setDetail] = useState(null);

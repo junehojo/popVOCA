@@ -92,6 +92,11 @@ const initial = {
   quizRound: 1, quizRetry: [], quizRetryInitial: 0, quizRetryLast: null,
   // ★ 재도전 인터스티셜 — 1R 끝에 무예고로 2R 문항이 나오던 문제. true면 Quiz가 '재도전 시작' 전환 카드를 먼저 보여줌
   quizRetryIntro: false,
+  // ★P0 quizNonce: 문항이 넘어갈 때마다 +1 — 문항 컴포넌트의 remount 키.
+  //   2R 잔여 1개를 또 틀리면 재삽입 결과가 같은 배열([X])이라 word.id가 안 바뀌고,
+  //   내부 상태(submitted·피드백 시트)가 리셋되지 않아 '다음'을 눌러도 화면이 죽어 있었다.
+  //   카드의 cardNonce와 같은 처방.
+  quizNonce: 0,
   // ★ 포인트 표기 정합 — 화면의 '+N'이 실제 적립액과 달랐던 버그(힌트 정답은 0점인데 ×5로 표시).
   //   sessionEarned = 이번 퀴즈 실제 적립 합, quizHintCount = 힌트 보고 맞힌 수(스탯 라벨 병기용)
   sessionEarned: 0, quizHintCount: 0,
@@ -106,7 +111,7 @@ const persistKeys = ['checkedCount', 'favorites', 'points', 'streak', 'todayLear
 const sessionKeys = ['screen', 'pausedScreen', 'activeStage', 'reviewMode', 'reviewReturn',
   'cardRound', 'cardIdx', 'cardSession', 'cardQueue', 'cardResults', 'cardR2Initial', 'cardPointsBase',
   'quizIdx', 'quizResults', 'quizQueue', 'quizReturn', 'quizRound', 'quizRetry', 'quizRetryInitial',
-  'quizRetryIntro', 'sessionEarned', 'quizHintCount'];
+  'quizRetryIntro', 'sessionEarned', 'quizHintCount', 'quizNonce'];
 const FLOW_SCREENS = ['card', 'preview', 'cardR1End', 'quiz'];   // 학습 진행 화면(이어하기 대상)
 const FONT_SCALE = { small: 0.9, normal: 1, large: 1.12 };   // 글자 크기 설정 배율
 const addUniq = (a, n) => a.includes(n) ? a : [...a, n];
@@ -294,14 +299,15 @@ function reducer(state, a) {
       if (state.quizRound === 2) {
         const q = state.quizRetry || [];
         if (q.length === 0) return { ...state, screen: 'result' };
+        const bump = (state.quizNonce || 0) + 1;   // ★문항 컴포넌트 remount 키 (같은 id 재등장 대비)
         if (state.quizRetryLast === 'o') {
           const nq = q.slice(1);
           if (nq.length === 0) { playSfx('complete'); hOk(); return { ...state, quizRetry: nq, quizRetryLast: null, screen: 'result' }; }
-          return { ...state, quizRetry: nq, quizRetryLast: null };
+          return { ...state, quizRetry: nq, quizRetryLast: null, quizNonce: bump };
         }
         const rest = q.slice(1);
         const at = Math.min(2, rest.length);
-        return { ...state, quizRetry: [...rest.slice(0, at), q[0], ...rest.slice(at)], quizRetryLast: null };
+        return { ...state, quizRetry: [...rest.slice(0, at), q[0], ...rest.slice(at)], quizRetryLast: null, quizNonce: bump };
       }
       const next = state.quizIdx + 1;
       if (next >= (state.quizQueue ? state.quizQueue.length : 0)) {
@@ -320,7 +326,7 @@ function reducer(state, a) {
         playSfx('complete'); hOk();
         return { ...out, screen: 'result' };
       }
-      return { ...state, quizIdx: next };
+      return { ...state, quizIdx: next, quizNonce: (state.quizNonce || 0) + 1 };
     }
     case 'QUIZ_RETRY_BEGIN':   // 인터스티셜 '재도전 시작' 탭 → 2R 문항 진입
       return { ...state, quizRetryIntro: false };
@@ -575,7 +581,11 @@ export default function App() {
         //   화면엔 상태만 알린다. 어느 쪽이든 사용자가 할 일은 없고 다음 변경 때 자동 재시도된다.
         if (miss) console.warn('[sync] vocapop_state 테이블 없음 — vocapop-supabase-schema.sql 실행 필요');
         setSyncMsg('동기화하지 못했어요');
-        if (miss) syncedFor.current = null;
+        // ★P0 데이터 손실 방지 — 실패 원인과 무관하게 항상 해제한다.
+        //   pull이 실패했는데 syncedFor가 user.id로 남으면 아래 push 이펙트의 가드
+        //   (syncedFor.current !== user.id)를 통과해, 병합되지 않은 '빈 로컬'이 2초 뒤
+        //   클라우드 기록을 upsert로 덮어쓴다(새 기기 첫 로그인 + 일시적 네트워크 실패 시나리오).
+        syncedFor.current = null;
       }
     })();
   }, [user, state._loaded]);

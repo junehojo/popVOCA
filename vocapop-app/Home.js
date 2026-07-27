@@ -5,7 +5,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { View, Text, Pressable, PanResponder, LayoutAnimation, Platform, UIManager, Animated, Easing } from 'react-native';
 import Svg, { Circle, Polygon, Rect, Defs, LinearGradient, Stop } from 'react-native-svg';
 import { VP, ff, ls } from './theme';
-import { hTap, hSel, BottomSheet, InlineToast } from './ui';
+import { hTap, hSel, BottomSheet, InlineToast, VPButton } from './ui';
 import { Icon } from './Icon';
 import { TOTAL, C2_START_STAGE, wordsForStage, dueReviewIds } from './data';
 
@@ -204,7 +204,7 @@ function DailyGoalCard({ state, dispatch }) {
 }
 
 /* ───── 걸음 말풍선 ───── */
-function StagePopover({ stage, stageState, dispatch, onClose }) {
+function StagePopover({ stage, stageState, onStart, onClose }) {
   const a = useRef(new Animated.Value(0)).current;
   useEffect(() => {
     if (stage == null) return;
@@ -225,11 +225,11 @@ function StagePopover({ stage, stageState, dispatch, onClose }) {
         <View style={{ backgroundColor: VP.accent, borderRadius: 16, paddingHorizontal: 14, paddingTop: 14, paddingBottom: 12 }}>
           <Text style={{ fontSize: 13, fontFamily: ff(700), color: '#fff', letterSpacing: ls(-0.02, 13) }}>{stage}걸음</Text>
           <Text style={{ fontSize: 12, color: 'rgba(255,255,255,0.85)', marginTop: 2 }}>완료한 걸음 · 다시 보거나 퀴즈로 점검</Text>
-          <Pressable onPress={() => { dispatch({ type: 'START_CARD', stage }); onClose(); }} style={popBtn()}>
+          <Pressable onPress={() => { onStart({ type: 'START_CARD', stage }); onClose(); }} style={popBtn()}>
             <Icon name="cards" size={16} color={VP.accentDeep} />
             <Text style={popBtnText()}>플래시카드 다시 보기</Text>
           </Pressable>
-          <Pressable onPress={() => { dispatch({ type: 'START_QUIZ', stage }); onClose(); }} style={popBtn()}>
+          <Pressable onPress={() => { onStart({ type: 'START_QUIZ', stage }); onClose(); }} style={popBtn()}>
             <Icon name="pencil" size={15} color={VP.accentDeep} />
             <Text style={popBtnText()}>퀴즈</Text>
           </Pressable>
@@ -245,10 +245,10 @@ function StagePopover({ stage, stageState, dispatch, onClose }) {
    ★초반(checkedCount<4)엔 계단 아래가 비어 첫 화면이 허전하고 '뭘 배우는지'가 안 보였음.
    다음 걸음 단어 3개를 미리 보여주고 탭 한 번으로 바로 학습 시작(계단 탭과 같은 동작).
    ★배치: 계단 컨테이너 밖 하단(탭바 위)에 도킹 — 예전엔 계단 안 absolute라 완료 걸음과 겹쳤음. */
-function StartHero({ stage, dispatch }) {
+function StartHero({ stage, onStart }) {
   const words = wordsForStage(stage).slice(0, 3);
   return (
-    <Pressable onPress={() => dispatch({ type: 'START_CARD', stage })}
+    <Pressable onPress={() => onStart({ type: 'START_CARD', stage })}
       accessibilityRole="button" accessibilityLabel={`오늘의 20단어 미리보기, ${stage}걸음 학습 시작`}
       style={({ pressed }) => ({
         marginHorizontal: 20, marginTop: 8, marginBottom: 16,   // ★하단 여백 — 탭바와 바짝 붙던 것 띄움
@@ -350,6 +350,14 @@ export default function Home({ state, dispatch, onOverlay }) {
   const [focused, setFocused] = useState(currentCheck);
   const [popover, setPopover] = useState(null);
   const [pointsSheet, setPointsSheet] = useState(false);   // ★포인트 칩 탭 → 적립 규칙 안내 시트(데드엔드 해소)
+  /* ★P0 진행 중 세션 보호 — START_CARD/QUIZ/DUE_REVIEW는 전부 pausedScreen:null로 세션을 갈아엎는다.
+     이어하기 배너가 떠 있는데 계단·StartHero·팝오버·복습 배너를 누르면 경고 없이 진행이 사라졌다.
+     새 세션을 여는 모든 진입점을 이 가드로 통과시켜 확인 시트를 먼저 띄운다. */
+  const [pendingStart, setPendingStart] = useState(null);
+  const guardedStart = (action) => {
+    if (state.pausedScreen) { hTap(); setPendingStart(action); }
+    else dispatch(action);
+  };
   const [contentW, setContentW] = useState(310);
   const lastMoveY = useRef(null);
 
@@ -449,7 +457,7 @@ export default function Home({ state, dispatch, onOverlay }) {
     if (n === focused) {
       const st = stageStateOf(n);
       // ★current는 즉시 시작 — 팝오버는 활성 선택지가 1개뿐이라 헛탭이었음. 미리보기 화면이 뒤따르므로 정보 손실 없음
-      if (st === 'current') dispatch({ type: 'START_CARD', stage: n });
+      if (st === 'current') guardedStart({ type: 'START_CARD', stage: n });
       else if (st === 'done') setPopover(n);   // 완료 걸음만 선택지 2개(다시보기/퀴즈) 팝오버
     }
     else settle(n - focused);
@@ -487,7 +495,7 @@ export default function Home({ state, dispatch, onOverlay }) {
       {/* ★sub를 평서문→권유형 질문으로: '안내(N개 있어요) → 권유(같이 끝낼까요?)' 흐름이 자연스러움 */}
       {!state.pausedScreen && dueCount > 0 ? (
         <HomeBanner icon="repeat" title={`복습 ${dueCount}개가 기다려요`} sub="새 단어 없이 복습만 끝내볼까요?"
-          cta="복습" onPress={() => dispatch({ type: 'START_DUE_REVIEW' })} />
+          cta="복습" onPress={() => guardedStart({ type: 'START_DUE_REVIEW' })} />
       ) : null}
 
       {/* 계단 */}
@@ -506,7 +514,7 @@ export default function Home({ state, dispatch, onOverlay }) {
             <StepRow key={n} n={n} st={stageStateOf(n)} rel={n - focused} contentW={contentW}
               isUser={n === currentCheck} onPress={() => onStepPress(n)} />
           ))}
-          <StagePopover stage={popover} stageState={popover != null ? stageStateOf(popover) : null} dispatch={dispatch} onClose={() => setPopover(null)} />
+          <StagePopover stage={popover} stageState={popover != null ? stageStateOf(popover) : null} onStart={guardedStart} onClose={() => setPopover(null)} />
         </Animated.View>
         {/* ★상단 페이드 — 프로토타입의 '상단 그라데이션 마스킹'이 이식에서 누락돼
             위쪽 걸음이 목표 카드 밑에서 하드하게 잘려 보였음. 배경색→투명 그라데이션으로 자연스럽게 사라지게 */}
@@ -531,12 +539,27 @@ export default function Home({ state, dispatch, onOverlay }) {
       </View>
 
       {/* ★콜드 스타트 히어로 — 계단 밖 하단에 도킹(탭바 위). 완료 걸음과 겹치지 않게 컨테이너 밖으로 */}
-      {checkedCount < 4 ? <StartHero stage={currentCheck} dispatch={dispatch} /> : null}
+      {checkedCount < 4 ? <StartHero stage={currentCheck} onStart={guardedStart} /> : null}
 
       <TabBar active="home" dispatch={dispatch} />
 
       {/* ★홈 1회성 토스트 — PAUSE 등에서 세팅된 안내를 탭바 위에 잠깐 띄우고 자동 소거 */}
       <InlineToast text={state.homeToast} bottom={96} onDone={() => dispatch({ type: 'HOME_TOAST_CLEAR' })} />
+
+      {/* ★P0 진행 중 세션 보호 시트 — 이어하기(기본) vs 새로 시작(파괴적). 기본 액션을 accent로 둬서
+          '무심코 누르면 잃는' 쪽이 아니라 '되찾는' 쪽이 눈에 먼저 들어오게 한다. */}
+      <BottomSheet visible={pendingStart != null} onClose={() => setPendingStart(null)}>
+        <Text style={{ fontSize: 18, fontFamily: ff(800), color: VP.text, letterSpacing: ls(-0.02, 18), marginTop: 4 }}>진행 중인 학습이 있어요</Text>
+        <Text style={{ fontSize: 14, color: VP.textSub, lineHeight: 21, marginTop: 8 }}>
+          {resumeLabel(state).label} · {resumeLabel(state).sub}{'\n'}새로 시작하면 지금까지 푼 내용은 사라져요.
+        </Text>
+        <View style={{ marginTop: 20, gap: 10 }}>
+          <VPButton variant="accent" label="이어하기"
+            onPress={() => { setPendingStart(null); dispatch({ type: 'RESUME' }); }} />
+          <VPButton variant="soft" label="새로 시작"
+            onPress={() => { const a = pendingStart; setPendingStart(null); dispatch(a); }} />
+        </View>
+      </BottomSheet>
 
       {/* ★포인트 적립 규칙 시트 — 포인트 칩 탭 데드엔드 해소 */}
       <BottomSheet visible={pointsSheet} onClose={() => setPointsSheet(false)}>

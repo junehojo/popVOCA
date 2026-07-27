@@ -45,7 +45,11 @@ const VP_DARK = {
   ok: '#3FD589', okSoft: '#152D20', okDeep: '#74E6B1',
   bad: '#FF6B7E', badSoft: '#341F24', badDeep: '#FF9AA6', badShade: '#241319',
   warning: '#FFB84D',
-  onText: '#FFFFFF', textShade: '#B8BECD',
+  /* ★P0: onText는 primary 버튼(bg=VP.text) 위 라벨색. 다크에서 VP.text가 #ECEFF6(거의 흰색)이라
+     흰 라벨을 쓰면 1.15:1로 글자가 사라졌다(플래시카드 '뜻 보기' — 세션당 가장 많이 눌리는 버튼).
+     다크에선 어두운 잉크로 뒤집는다 → #ECEFF6 위 16.5:1 (실측).
+     ui.js VARIANTS의 primary 한 곳에서만 쓰이므로 액센트 배경 라벨엔 영향 없음 */
+  onText: '#0E1015', textShade: '#B8BECD',
   pushShade: '#070809', pushRing: '#2A2F3A', cardShade: '#070809',
   doneShade: '#2E1F2A',
 };

@@ -608,12 +608,17 @@ export function QuizScreen({ state, dispatch }) {
   const onToggleFav = () => dispatch({ type: 'TOGGLE_FAV', id });
   const onResult = (outcome) => dispatch({ type: 'QUIZ_ANSWER', id: word.id, slot, outcome });
   const onNext = () => dispatch({ type: 'QUIZ_NEXT' });
-  if (slot === 'tile') return <TileQuiz word={word} progress={progress} onBack={onBack} onResult={onResult} onNext={onNext} fav={fav} onToggleFav={onToggleFav} />;
-  if (slot === 'spell') return <SpellQuiz word={word} progress={progress} onBack={onBack} onResult={onResult} onNext={onNext} fav={fav} onToggleFav={onToggleFav} />;
+  /* ★P0 remount 키 — 문항 컴포넌트의 리셋 effect는 전부 [word.id] 의존이라, 2R에서 잔여 1개를
+     또 틀려 같은 id가 재삽입되면(재큐잉 결과가 동일 배열) submitted·피드백 시트가 안 풀려
+     '다음'을 눌러도 화면이 죽었다. id:nonce를 key로 주면 React가 통째로 remount해
+     4유형의 모든 내부 상태가 한 번에 초기화되고, 진입 애니메이션도 재생돼 변화가 눈에 보인다. */
+  const qKey = `${id}:${state.quizNonce || 0}`;
+  if (slot === 'tile') return <TileQuiz key={qKey} word={word} progress={progress} onBack={onBack} onResult={onResult} onNext={onNext} fav={fav} onToggleFav={onToggleFav} />;
+  if (slot === 'spell') return <SpellQuiz key={qKey} word={word} progress={progress} onBack={onBack} onResult={onResult} onNext={onNext} fav={fav} onToggleFav={onToggleFav} />;
   if (slot === 'listen') {
     const homeStage = stageIdxOf(id);
     const opts = (meta && meta.options) || pickOptions(wordsForStage(homeStage ? homeStage.stage : state.activeStage), word);
-    return <ListenQuiz word={word} options={opts} progress={progress} onBack={onBack} onResult={onResult} onNext={onNext} fav={fav} onToggleFav={onToggleFav} />;
+    return <ListenQuiz key={qKey} word={word} options={opts} progress={progress} onBack={onBack} onResult={onResult} onNext={onNext} fav={fav} onToggleFav={onToggleFav} />;
   }
   // 객관식(mc) — 동결 문항 그대로
   let type = (meta && meta.type) || QUIZ_CYCLE[state.quizIdx % QUIZ_CYCLE.length];
@@ -628,6 +633,7 @@ export function QuizScreen({ state, dispatch }) {
   const pool = options || wordsForStage(homeStage ? homeStage.stage : state.activeStage);
   return (
     <QuizView
+      key={qKey}
       type={type} word={word} pool={pool} options={options} progress={progress} segments={segments} right={retryRight}
       onBack={onBack} onResult={onResult} onNext={onNext} fav={fav} onToggleFav={onToggleFav}
     />

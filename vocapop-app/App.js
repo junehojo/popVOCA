@@ -79,7 +79,7 @@ const initial = {
   vocabView: null,           // 단어장 진입 시 열 뷰 ('confusing' = 헷갈리는 덱 바로)
   // 플래시카드 진행 (cardSession = 셔플된 세션 [{id,review}], cardQueue = 2R 드릴 id)
   cardRound: 1, cardIdx: 0, cardSession: [], cardQueue: [], cardResults: {}, cardR2Initial: 0,
-  cardHistory: [],           // R1 답 기록 [{id,prevBox,know}] — '이전 카드'(답 정정)용, 비영속
+  cardHistory: [],           // R1 답 기록 [{id,prevBox,know}] — '이전 카드'(답 정정)용. 최근 40개, 세션과 함께 저장
   // ★ cardNonce: 답할 때마다 +1 — R2에서 같은 id가 연속 재등장해도(잔여 1개 케이스) 플립 리셋 effect가 돌게 하는 키.
   //   word.id만 deps로 쓰면 카드가 뒤집힌 채(뜻 노출) 재등장하는 버그가 있었음.
   cardNonce: 0,
@@ -110,6 +110,10 @@ const persistKeys = ['checkedCount', 'favorites', 'points', 'streak', 'todayLear
 // 진행 중이던 학습 세션 — 로컬에만 저장(클라우드 동기화 X). 앱을 닫았다 켜도 '이어하기'로 복원돼 진도가 안 날아감.
 const sessionKeys = ['screen', 'pausedScreen', 'activeStage', 'reviewMode', 'reviewReturn',
   'cardRound', 'cardIdx', 'cardSession', 'cardQueue', 'cardResults', 'cardR2Initial', 'cardPointsBase',
+  // ★cardHistory도 저장 — 빠져 있어서 앱을 껐다 켜고 이어하면 8/20 카드에서도 되돌리기가 죽어 있었다.
+  //   CARD_PREV가 되돌리는 값(boxes·points·dailyLog·streak·cardResults·cardIdx)은 전부 이미 영속이라
+  //   히스토리만 함께 저장하면 복원된 세션에서도 정정이 그대로 동작한다. 최근 40개 상한이라 용량 부담 없음.
+  'cardHistory',
   'quizIdx', 'quizResults', 'quizQueue', 'quizReturn', 'quizRound', 'quizRetry', 'quizRetryInitial',
   'quizRetryIntro', 'sessionEarned', 'quizHintCount', 'quizNonce'];
 const FLOW_SCREENS = ['card', 'preview', 'cardR1End', 'quiz'];   // 학습 진행 화면(이어하기 대상)

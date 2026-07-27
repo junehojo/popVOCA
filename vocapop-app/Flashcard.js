@@ -94,9 +94,16 @@ export function FlashcardScreen({ state, dispatch, onOverlay }) {
       style={{
         width: 56, height: 56, borderRadius: 16, backgroundColor: VP.surface2,
         borderWidth: 1.5, borderColor: VP.border, alignItems: 'center', justifyContent: 'center',
-        opacity: canPrev ? 1 : 0.4,
       }}>
-      <Icon name="arrow-left" size={20} color={VP.textSub} />
+      {/* ★비활성은 컨테이너가 아니라 화살표만 흐리게 한다.
+          RN opacity는 서브트리를 통째로 합성하므로 Pressable에 걸면 배경·테두리까지 같이 옅어진다
+          (실측: 테두리 1.06:1, 화살표 1.70:1 — 버튼이 있다는 신호까지 죽어 구멍이 '옅어진' 것에 불과했다).
+          surface2 채움(1.04:1)과 테두리(1.16:1)는 원래도 약해서, 이 버튼의 실질 신호는 화살표뿐이다.
+          그래서 화살표만 감쇠한다 — 라이트 2.9:1 / 다크 4.2:1로 존재는 남고 강도만 낮아진다.
+          (WordDetail의 0.4는 테두리가 없고 아이콘이 VP.text라서 성립하는 값이다. 여기선 못 쓴다.) */}
+      <View style={{ opacity: canPrev ? 1 : 0.75 }}>
+        <Icon name="arrow-left" size={20} color={VP.textSub} />
+      </View>
     </Pressable>
   );
   /* ★푸터 고정 그리드 [56][flex1][flex1] — 카드마다 '알아요' 좌표가 흔들리면 반복 탭 리듬이 깨진다.

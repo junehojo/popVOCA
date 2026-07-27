@@ -1,7 +1,7 @@
 /* VocaPoP 결과 — design-reference/vp-proto-screens-2.jsx (ResultScore) 이식 + 리디자인.
    도넛 점수(카운트업) + 스탯 + 오답 리스트(즉시 저장·복습 루프) + 맥락형 CTA. */
 import React, { useRef, useEffect, useState } from 'react';
-import { View, Text, Animated, Easing, Pressable, ScrollView, Dimensions } from 'react-native';
+import { View, Text, Animated, Easing, Pressable, ScrollView } from 'react-native';
 import Svg, { Circle, Defs, LinearGradient, Stop, Rect } from 'react-native-svg';
 import { VP, ff, ls } from './theme';
 import { Icon } from './Icon';
@@ -10,7 +10,6 @@ import { wordsForStage, BY_ID, meaningList, TOTAL } from './data';
 import WordDetail from './WordDetail';
 
 const AnimatedCircle = Animated.createAnimatedComponent(Circle);
-const SCREEN_H = Dimensions.get('window').height;
 
 /* ★일회성 컨페티 — 만점/재도전 완주의 '해결' 순간에만. 새 의존성 없이 Animated 12개 파티클 낙하+회전 1.2s.
    pointerEvents none이라 터치 방해 없음. reduce-motion 사용자는 호출부에서 렌더 자체를 생략. */
@@ -142,7 +141,10 @@ export function ResultScore({ state, dispatch }) {
   const saveAll = () => wrongWords.forEach(w => { if (!favSet.has(w.id)) dispatch({ type: 'TOGGLE_FAV', id: w.id }); });
 
   const celebrate = (acc === 100 || redeemed) && !reduced;
-  const listScrolls = wrongWords.length > 4;   // 4행 초과 시 화면 34% 높이로 스크롤 + 하단 페이드
+  // 오답 리스트가 남은 공간을 넘치는지 실측 — 넘칠 때만 하단 페이드(스크롤 어포던스)를 띄운다.
+  const [listH, setListH] = useState(0);
+  const [listContentH, setListContentH] = useState(0);
+  const listOverflows = listContentH > listH + 1;
 
   // CTA 분기 — 오답이 남아 있으면 복습이 1순위, 해결됐으면 다음 진도가 1순위
   const showWrongCta = wrong > 0 && !redeemed;
@@ -152,8 +154,15 @@ export function ResultScore({ state, dispatch }) {
 
   return (
     <View style={{ flex: 1, backgroundColor: VP.bg }}>
-      {/* ★센터 그룹을 상단 앵커(paddingTop 32)로 전환 — 수직 중앙 배치로는 오답 리스트가 들어갈 공간이 없었음 */}
-      <View style={{ flex: 1, alignItems: 'center', paddingTop: 32, paddingHorizontal: 20, gap: 14 }}>
+      {/* ★정렬을 오답 유무로 분기한다.
+          오답이 있으면 상단 앵커(paddingTop 32) — 수직 중앙 배치로는 오답 리스트가 들어갈 공간이 없다.
+          오답이 0개면 리스트가 통째로 사라지므로 상단 앵커를 그대로 쓰면 아래로 250pt 넘게 비어,
+          가장 축하해야 할 화면(첫 시도 만점)이 가장 허전해지는 역전이 생긴다. 그때만 수직 중앙으로.
+          재도전으로 다 맞힌 경우(redeemed)는 wrongWords가 1R 기준이라 리스트가 남으므로 상단 앵커 유지. */}
+      <View style={{
+        flex: 1, alignItems: 'center', paddingHorizontal: 20, gap: 14,
+        ...(wrongWords.length > 0 ? { paddingTop: 32 } : { justifyContent: 'center' }),
+      }}>
         {/* ★도넛+타이틀+스탯을 하나의 accessible 그룹으로 — 스크린리더가 숫자 파편 대신 한 문장으로 읽음 */}
         <View accessible accessibilityLabel={`정확도 ${acc}퍼센트, 정답 ${right}, 오답 ${wrong}, 포인트 ${earned}점 적립`}
           style={{ alignItems: 'center', gap: 14, width: '100%' }}>
@@ -186,7 +195,7 @@ export function ResultScore({ state, dispatch }) {
 
         {/* ★오답 리스트 — '오답 N'을 보여주고 끝나던 화면에서, 그 자리에서 듣고·저장하고·상세를 여는 정리 공간으로 */}
         {wrongWords.length > 0 ? (
-          <View style={{ width: '100%', maxWidth: 360, gap: 8 }}>
+          <View style={{ width: '100%', maxWidth: 360, gap: 8, flexShrink: 1, minHeight: 0 }}>
             <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
               <Text style={{ fontSize: 14, fontFamily: ff(700), color: VP.text, letterSpacing: ls(-0.01, 14) }}>이번에 틀린 단어 {wrongWords.length}</Text>
               <Pressable onPress={saveAll} disabled={allSaved} hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
@@ -195,15 +204,23 @@ export function ResultScore({ state, dispatch }) {
                 <Text style={{ fontSize: 13, fontFamily: ff(700), color: allSaved ? VP.textFaint : VP.accentAA }}>{allSaved ? '저장됨' : '모두 저장'}</Text>
               </Pressable>
             </View>
-            {listScrolls ? (
-              <View style={{ maxHeight: Math.round(SCREEN_H * 0.34) }}>
-                <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ gap: 8, paddingBottom: 24 }}>
-                  {wrongWords.map(w => (
-                    <WrongRow key={w.id} w={w} isFav={favSet.has(w.id)} onOpen={() => setDetail(w)}
-                      onToggleFav={() => dispatch({ type: 'TOGGLE_FAV', id: w.id })} />
-                  ))}
-                </ScrollView>
-                {/* ★하단 페이드 — 잘린 행이 '더 있음'을 알리는 스크롤 어포던스 (새 의존성 없이 svg 그라디언트) */}
+            {/* ★'4행 초과면 화면 34% 높이로 스크롤, 아니면 그냥 쌓기' 분기를 버리고 항상 스크롤 컨테이너로.
+                고정 임계값(>4)과 고정 높이(SCREEN_H*0.34)는 짧은 기기를 고려하지 않아서,
+                375×667에서 오답이 4개면 스크롤 컨테이너가 안 붙는데 3·4번째 행이 푸터 뒤와 화면 밖으로
+                밀려 아예 도달 불가였다(실측: 푸터 상단 521, 3번째 행 560~579, 4번째 행 624~669).
+                flexShrink로 남은 공간에 맞춰 줄고, 넘칠 때만 페이드를 띄운다 — 기기 높이·행 수와 무관하게 안전. */}
+            <View style={{ flexShrink: 1, minHeight: 0 }}
+              onLayout={(e) => setListH(e.nativeEvent.layout.height)}>
+              <ScrollView showsVerticalScrollIndicator={false}
+                onContentSizeChange={(w, h) => setListContentH(h)}
+                contentContainerStyle={{ gap: 8, paddingBottom: listOverflows ? 24 : 0 }}>
+                {wrongWords.map(w => (
+                  <WrongRow key={w.id} w={w} isFav={favSet.has(w.id)} onOpen={() => setDetail(w)}
+                    onToggleFav={() => dispatch({ type: 'TOGGLE_FAV', id: w.id })} />
+                ))}
+              </ScrollView>
+              {/* ★하단 페이드 — 잘린 행이 '더 있음'을 알리는 스크롤 어포던스 (새 의존성 없이 svg 그라디언트) */}
+              {listOverflows ? (
                 <Svg pointerEvents="none" style={{ position: 'absolute', left: 0, right: 0, bottom: 0 }} width="100%" height={28}>
                   <Defs>
                     <LinearGradient id="wrongFade" x1="0" y1="0" x2="0" y2="1">
@@ -213,15 +230,8 @@ export function ResultScore({ state, dispatch }) {
                   </Defs>
                   <Rect x="0" y="0" width="100%" height="28" fill="url(#wrongFade)" />
                 </Svg>
-              </View>
-            ) : (
-              <View style={{ gap: 8 }}>
-                {wrongWords.map(w => (
-                  <WrongRow key={w.id} w={w} isFav={favSet.has(w.id)} onOpen={() => setDetail(w)}
-                    onToggleFav={() => dispatch({ type: 'TOGGLE_FAV', id: w.id })} />
-                ))}
-              </View>
-            )}
+              ) : null}
+            </View>
           </View>
         ) : null}
       </View>

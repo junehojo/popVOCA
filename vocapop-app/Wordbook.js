@@ -137,8 +137,14 @@ function WordbookRow({ word, ivl, isFav, custom, failed, onConfusing, onKnownSte
             else if (n === 'known') onKnownStep();
             else if (n === 'detail') onTap();
           }}
-          style={{ flex: 1, minWidth: 0, flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-          <View style={{ width: 40 }} accessible={false} importantForAccessibility="no-hide-descendants">
+          /* ★gap 6→12 — 게이지 슬롯을 40에서 18로 줄이면서 형광펜이 막대에 닿았다.
+             형광펜 박스는 글자 x를 고정하려고 marginLeft -5로 왼쪽으로 삐져나오므로(아래 참고)
+             gap 6이면 헷갈리는 단어(형광펜 on)에서 실제 간격이 1px가 된다. 12면 형광펜 7px / 없을 때 12px. */
+          style={{ flex: 1, minWidth: 0, flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+          {/* ★40→18 — 내용이 막대 3개(4×3 + gap 3×2 = 18px)뿐인데 슬롯이 40px이라 모든 행에 22px 빈 거터가
+              남았다(수집 단어의 pip는 14px이라 26px). 레벨 지표와 단어가 한 덩어리로 안 읽히던 원인.
+              alignItems center로 막대(18)와 pip(14) 모두 같은 축에 놓는다. */}
+          <View style={{ width: 18, alignItems: 'center' }} accessible={false} importantForAccessibility="no-hide-descendants">
             {custom
               ? <Icon name="pip" size={14} color={VP.textFaint} />
               : (

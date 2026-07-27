@@ -62,6 +62,8 @@ export function Icon({ name, size = 18, color = '#1F2430', strokeWidth = 1.75 })
     case 'log-out': return <Svg {...v}><Path {...k} d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" /><Polyline {...k} points="16 17 21 12 16 7" /><Line {...k} x1="21" y1="12" x2="9" y2="12" /></Svg>;
     case 'eye': return <Svg {...v}><Path {...k} d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7z" /><Circle {...k} cx="12" cy="12" r="3" /></Svg>;
     case 'eye-off': return <Svg {...v}><Path {...k} d="M17.94 17.94A10.07 10.07 0 0 1 12 19c-7 0-11-7-11-7a18.45 18.45 0 0 1 5.06-5.94M9.9 5.24A9.12 9.12 0 0 1 12 5c7 0 11 7 11 7a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24" /><Line {...k} x1="1" y1="1" x2="23" y2="23" /></Svg>;
+    /* ★'마이' 탭 아이콘 — 4번째 탭은 프로필 카드로 시작하는 마이페이지인데 톱니(설정)를 달고 있었음 */
+    case 'user': return <Svg {...v}><Circle {...k} cx="12" cy="8" r="3.6" /><Path {...k} d="M4.8 20a7.2 7.2 0 0 1 14.4 0" /></Svg>;
     default: return null;
   }
 }

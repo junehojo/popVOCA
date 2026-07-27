@@ -126,7 +126,7 @@ const DOCS = {
       + '· 기기 간 학습 이어하기(동기화)에만 사용해요. 광고·추적 목적의 수집은 없어요.\n'
       + '· 로그인하지 않으면 모든 기록은 이 기기에만 저장돼요.\n\n'
       + '삭제\n'
-      + '· 설정 > 진행 초기화로 학습 기록을 지울 수 있어요. 로그인 상태면 클라우드 기록도 함께 지워져요.\n'
+      + '· 마이 > 진행 초기화로 학습 기록을 지울 수 있어요. 로그인 상태면 클라우드 기록도 함께 지워져요.\n'
       + '· 로그아웃하면 동기화가 중단되고, 기록은 기기와 클라우드에 남아요.',
   },
 };
@@ -336,7 +336,8 @@ export default function Settings({ state, dispatch, account, onOverlay, onReset 
     <View style={{ flex: 1, backgroundColor: VP.bg }}>
       {/* 헤더 */}
       <View style={{ paddingTop: 14, paddingHorizontal: 20, paddingBottom: 10 }}>
-        <Text style={{ fontSize: 22, fontFamily: ff(800), color: VP.text, letterSpacing: ls(-0.025, 22) }}>설정</Text>
+        {/* ★탭 라벨과 동일하게 '마이' — 화면 정체성(프로필+계정+학습옵션)이 순수 설정보다 넓다 */}
+        <Text style={{ fontSize: 22, fontFamily: ff(800), color: VP.text, letterSpacing: ls(-0.025, 22) }}>마이</Text>
       </View>
 
       <ScrollView style={{ flex: 1 }} contentContainerStyle={{ paddingHorizontal: 20, paddingTop: 4, paddingBottom: 24 }}>

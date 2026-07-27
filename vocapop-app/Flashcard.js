@@ -437,7 +437,7 @@ export function PreviewScreen({ state, dispatch }) {
         <View style={{ flex: 1 }}>
           <Text style={{ fontSize: 22, fontFamily: ff(800), color: VP.text, letterSpacing: ls(-0.025, 22) }}>이번에 외울 {newWords.length}단어</Text>
           {/* ★복습 문구 제거 — 복습은 아래 섹션 헤더가 구조로 말해준다 */}
-          <Text style={{ fontSize: 13, color: VP.textSub, marginTop: 4, lineHeight: 19 }}>가볍게 훑어보기 — 다 외우지 않아도 OK</Text>
+          <Text style={{ fontSize: 13, color: VP.textSub, marginTop: 4, lineHeight: 19 }}>가볍게 훑어보기 · 다 외우지 않아도 OK</Text>
         </View>
         {/* ★전체 듣기 pill — height 32 + hitSlop 6으로 44px 터치 타깃 확보. accentSoft 위 텍스트는 accentAA */}
         <Pressable onPress={togglePlay} hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
@@ -507,7 +507,7 @@ export function CardR1EndScreen({ state, dispatch }) {
         <Text style={{ fontSize: 22, fontFamily: ff(800), color: VP.text, letterSpacing: ls(-0.025, 22) }}>몰랐던 {count}개만 한 번 더</Text>
         {/* ★실패 수 강조 accent→text/700 — 핑크는 '경고'로 읽혔음. 중립 강조로 톤 다운 */}
         <Text style={{ fontSize: 15, color: VP.textSub, lineHeight: 24, textAlign: 'center', maxWidth: 280 }}>
-          <Text style={{ color: VP.text, fontFamily: ff(700) }}>기억했어요</Text>를 누를 때까지 반복해요{'\n'}— <Text style={{ color: VP.text, fontFamily: ff(700) }}>{count}개</Text>면 금방이에요
+          <Text style={{ color: VP.text, fontFamily: ff(700) }}>기억했어요</Text>를 누를 때까지 반복해요{'\n'}<Text style={{ color: VP.text, fontFamily: ff(700) }}>{count}개</Text>면 금방이에요
         </Text>
         {/* ★1R 정오 요약 — 방금 한 일의 결과를 숫자로 확인시켜 2R 동기 부여 */}
         <MiniStatRow items={[{ n: knowN, label: '알아요' }, { n: dontN, label: '몰라요' }]} style={{ width: '100%', maxWidth: 300 }} />

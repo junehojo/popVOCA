@@ -48,7 +48,7 @@ export async function scheduleReviewReminder({ enabled, hour, studiedToday, dueC
       ? `밀린 복습 ${dueCount}개가 기다려요${streak > 0 ? ` · 🔥 ${streak}일 연속 지키기` : ''}`
       : confusingCount > 0
         ? `헷갈리는 단어 ${confusingCount}개가 기다려요${streak > 0 ? ` · 🔥 ${streak}일 연속 지키기` : ''}`
-        : (streak > 0 ? `오늘 한 걸음 — 🔥 ${streak}일 연속을 지켜요!` : '오늘 한 걸음, 20단어면 충분해요');
+        : (streak > 0 ? `오늘 한 걸음 · 🔥 ${streak}일 연속을 지켜요!` : '오늘 한 걸음, 20단어면 충분해요');
     await Notifications.scheduleNotificationAsync({
       content: { title: 'popVOCA 복습 시간', body, sound: false },
       trigger: { date: t, channelId: 'review' },
@@ -61,7 +61,7 @@ export async function scheduleReviewReminder({ enabled, hour, studiedToday, dueC
     await Notifications.scheduleNotificationAsync({
       content: {
         title: '3일 쉬었어요',
-        body: confusingCount > 0 ? `1분 퀴즈로 가볍게 복귀해요 — 헷갈리는 단어 ${confusingCount}개` : '1분 퀴즈로 가볍게 복귀해요',
+        body: confusingCount > 0 ? `1분 퀴즈로 가볍게 복귀해요 · 헷갈리는 단어 ${confusingCount}개` : '1분 퀴즈로 가볍게 복귀해요',
         sound: false,
       },
       trigger: { date: t3, channelId: 'review' },

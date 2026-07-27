@@ -265,7 +265,7 @@ export default function Stats({ state, dispatch }) {
           <SectionCard title="학습 기록">
             {recentLog.length === 0 ? (
               <Text style={{ fontSize: 13, color: VP.textSub, lineHeight: 19, paddingVertical: 4 }}>
-                <Text style={{ fontFamily: ff(700), color: VP.text }}>첫 퀴즈를 마치면</Text> 통계가 열려요 — 정답률과 함께 여기 기록돼요.
+                <Text style={{ fontFamily: ff(700), color: VP.text }}>첫 퀴즈를 마치면</Text> 통계가 열려요. 정답률과 함께 여기 기록돼요.
               </Text>
             ) : (
               recentLog.map((s, i) => (

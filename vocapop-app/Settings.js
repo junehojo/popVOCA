@@ -120,8 +120,8 @@ const DOCS = {
   privacy: {
     title: '개인정보처리방침',
     body: '수집하는 데이터\n'
-      + '· 이메일 주소(로그인 시) — 계정 식별에만 사용해요.\n'
-      + '· 학습 진도(체크·복습 상태·즐겨찾기·설정) — 로그인 시 Supabase에 동기화 저장돼요.\n\n'
+      + '· 이메일 주소(로그인 시)는 계정 식별에만 사용해요.\n'
+      + '· 학습 진도(체크·복습 상태·즐겨찾기·설정)는 로그인 시 Supabase에 동기화 저장돼요.\n\n'
       + '목적과 보관\n'
       + '· 기기 간 학습 이어하기(동기화)에만 사용해요. 광고·추적 목적의 수집은 없어요.\n'
       + '· 로그인하지 않으면 모든 기록은 이 기기에만 저장돼요.\n\n'
@@ -307,7 +307,7 @@ export default function Settings({ state, dispatch, account, onOverlay, onReset 
       + `🔥 연속 ${state.streak || 0}일 · ⭐ ${(state.points || 0).toLocaleString()}\n`
       + `체크 ${state.checkedCount}/${TOTAL}걸음 · 외운 단어 ${learned}개\n`
       + `학습 시작 ${startedIds(state.boxes).length}단어 · 헷갈리는 ${confusingIds(state.boxes).length}단어\n`
-      + (lines.length ? `\n— 퀴즈 기록 —\n${lines.join('\n')}` : '');
+      + (lines.length ? `\n[퀴즈 기록]\n${lines.join('\n')}` : '');
     try { await Share.share({ message: msg }); } catch (e) {}
   };
 
@@ -374,7 +374,7 @@ export default function Settings({ state, dispatch, account, onOverlay, onReset 
           <GoalStepperRow value={state.dailyGoal} onChange={(v) => dispatch({ type: 'SET_GOAL', value: v })} />
           {/* ★예문 도메인 — "내 분야 문장으로 배우기" 진입점 */}
           <NavRow icon="book-open" label="예문 도메인" value={domainLabel(s.domain)} onPress={() => setDomainSheet(true)} />
-          {showOverlay ? <NavRow icon="pip" label="플로팅 학습 — 다른 앱 위에" onPress={openOverlay} /> : null}
+          {showOverlay ? <NavRow icon="pip" label="플로팅 학습 · 다른 앱 위에" onPress={openOverlay} /> : null}
           <ToggleRow icon="speaker" label="발음 자동 재생" on={s.autoPlay} onChange={(v) => set('autoPlay', v)} />
           <ToggleRow icon="party" label="효과음" on={s.sound} onChange={(v) => set('sound', v)} />
           <ToggleRow icon="lightbulb" label="복습 알림" on={s.noti !== false} onChange={onNotiToggle} last={s.noti === false} />

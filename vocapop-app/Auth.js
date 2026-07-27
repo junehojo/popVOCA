@@ -102,7 +102,7 @@ export default function AuthSheet({ visible, onClose }) {
     setErr(''); setBusy(true);
     try { await supabase.auth.resetPasswordForEmail(email.trim()); } catch (e) {}
     setBusy(false);
-    setInfo('재설정 메일을 보냈어요 — 받은편지함을 확인하세요');
+    setInfo('재설정 메일을 보냈어요. 받은편지함을 확인하세요');
   };
 
   // 구글 OAuth(웹플로우): 인앱 브라우저로 동의 → vocapop://auth-callback 로 코드 받기 → 세션 교환

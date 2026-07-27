@@ -571,7 +571,10 @@ export default function App() {
         setSyncMsg('동기화됨 · 방금');
       } catch (e) {
         const miss = e && (e.code === '42P01' || /does not exist/.test(e.message || ''));
-        setSyncMsg(miss ? '테이블이 없어요 · SQL 실행 필요' : '동기화 실패');
+        // ★사용자 문구에 DB 내부 용어(테이블·SQL) 노출 금지 — 원인은 개발자용 콘솔로만 남기고
+        //   화면엔 상태만 알린다. 어느 쪽이든 사용자가 할 일은 없고 다음 변경 때 자동 재시도된다.
+        if (miss) console.warn('[sync] vocapop_state 테이블 없음 — vocapop-supabase-schema.sql 실행 필요');
+        setSyncMsg('동기화하지 못했어요');
         if (miss) syncedFor.current = null;
       }
     })();
